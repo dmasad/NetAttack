@@ -4,6 +4,7 @@ Some basic prototypes for strategies and agents.
 '''
 
 import random
+import networkx as nx
 
 class Strategy(object):
     '''
@@ -13,12 +14,12 @@ class Strategy(object):
     def __init__(self):
         pass
     
-    def run(self, data, a, b):
+    def run(self, graph, a, b):
         '''
         Run the strategy and return a dictionary of weights for each element.
         
         Args:
-            data: A dictionary mapping each node to the relevant indicator
+            graph: The relevant graph
             a, b: Two parameters for the strategy; e.g. slope and intercept.
         Returns:
             A dictionary of weights, with the same keys as the data dict.
@@ -26,6 +27,19 @@ class Strategy(object):
         
         pass
     
+
+
+class DegreeAttackStrategy(Strategy):
+    '''
+    Example Degree-attack strategy implementation
+    '''
+    
+    def run(self, graph, a, b):
+        degree_data = nx.degree(G, nbunch, weight)
+        weights = {}
+        for node, deg in degree_data.items():
+            weights[node] = a + b * deg
+        return weights
 
 
 class GenomeAgent(object):
