@@ -10,7 +10,7 @@ class RunManager(object):
     The object that manages a single run of the model.
     '''
 
-    def __init__(self, attacker, defender, num_iterations, fitness):
+    def __init__(self, attacker, defender, num_iterations, fitness, nmb_nodes):
         '''
         Create a new Run Manager.
         
@@ -23,8 +23,12 @@ class RunManager(object):
         
         self.attacker = attacker
         self.defender = defender
-        self.num_iterations = num_iterations
+        
+	self.nodes_lost_edges = []
+
+	self.num_iterations = num_iterations
         self.G = nx.Graph()
+	G.add_nodes_from(range(nmb_nodes))
         self.fitness = fitness
         self.fitness_per_round = []
         
@@ -50,11 +54,21 @@ class RunManager(object):
 	pass
     
     def attack_network(self):
-	attacker.attack_network()        
+
+	attacked_node=self.attacker.which_node_to_attack()  
+	self.nodes_lost_edges=self.G.neighbors(attacked_node)
+	self.G.remove_node(attacked_node)	
+
 	pass
+
     
     def defend_network(self):
-	defender.defender_network()
+	edges_to_rewire=self.defender.defender_network(self.nodes_lost_edges)
+	'''
+	edges to rewire are contained within edges_to_rewire
+	'''
+	self.G.add_edges_from(edges_to_rewire)
+	
         pass
 
     def calculate_network_metrics_attacker():
@@ -63,8 +77,8 @@ class RunManager(object):
         for all nodes in the network
         returns a matrix of nodes*metrics
         '''
-   
-	pass
+   	
+	return []
     
     def calculate_network_metrics_defender():
         '''
