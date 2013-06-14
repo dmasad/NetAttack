@@ -14,13 +14,14 @@ class Strategy(object):
     def __init__(self):
         pass
     
-    def run(self, graph, a, b):
+    def run(self, graph, slope):
         '''
         Run the strategy and return a dictionary of weights for each element.
         
         Args:
             graph: The relevant graph
             a, b: Two parameters for the strategy; e.g. slope and intercept.
+            We agreed on just the slope right? -- Andrea
         Returns:
             A dictionary of weights, with the same keys as the data dict.
         '''
@@ -34,12 +35,83 @@ class DegreeAttackStrategy(Strategy):
     Example Degree-attack strategy implementation
     '''
     
-    def run(self, graph, a, b):
-        degree_data = nx.degree(G, nbunch, weight)
+    def run(self, graph, slope):
+        degree_data = nx.degree_centrality(graph)
         weights = {}
         for node, deg in degree_data.items():
-            weights[node] = a + b * deg
+            weights[node] = slope[node] * deg
         return weights
+    
+class BetweennessAttackStrategy(Strategy):
+    '''
+    Example Betweenness Centality-attack strategy implementation
+    '''
+    
+    def run(self, graph, slope):
+        betwenness_data = nx.betwenness_centrality(graph)
+        weights = {}
+        for node, betw in betweenness_data.items():
+            weights[node] = slope[node] * betw
+        return weights
+
+
+
+class ClosenessAttackStrategy(Strategy):
+    '''
+    Example Closeness Centality-attack strategy implementation
+    '''
+    
+    def run(self, graph, slope):
+        closeness_data = nx.closeness_centrality(graph)
+        weights = {}
+        for node, close in closeness_data.items():
+            weights[node] = slope[node] * close
+        return weights
+
+
+
+class ClusteringAttackStrategy(Strategy):
+    '''
+    Example clustering-attack strategy implementation
+    '''
+    
+    def run(self, graph, slope):
+        clustering_data = nx.clustering(graph)
+        weights = {}
+        for node, cluster in clustering_data.items():
+            weights[node] = slope[node] * cluster
+        return weights
+
+
+
+
+class EigenvectorCentralityAttackStrategy(Strategy):
+    '''
+    Example eigenvector centrality-attack strategy implementation
+    '''
+    
+    def run(self, graph, slope):
+        eigenvector_data = nx.eigenvector_centrality(graph)
+        weights = {}
+        for node, eigenv in eigenvector_data.items():
+            weights[node] = slope[node] * eigenv
+        return weights
+    
+    
+class CommunicabilityCentralityAttackStrategy(Strategy):
+    '''
+    Example communicability centrality-attack strategy implementation
+    '''
+    
+    def run(self, graph, slope):
+        communicability_data = nx.communicability_centrality(graph)
+        weights = {}
+        max_comm_for_normaliz = max(communicability_data.values())
+        for node, commu in communicability_data.items():
+            weights[node] = slope[node] * commu / max_comm_for_normaliz
+        return weights
+
+
 
 
 class GenomeAgent(object):
