@@ -5,6 +5,70 @@ from array import *
 
 from GenomeAgent import Strategy
 
+class AttackerAgent(object):
+
+ def __init__(self,genome=None):
+      
+        self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy,EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
+        maxSlopeValue = 100
+        if(genome==None):
+            self.genome=[]
+            for i in range(len(self.strategies)*2):
+                self.genome.append(random.random()*maxSlopeValue)
+                print self.genome
+        else:
+            self.genome=genome
+
+ def which_node_to_attack(self,graph):
+        attackerSummer = AttackerSummer()
+        sumWeightsMetrics = attackerSummer.run(graph,self.genome)# array (list) of doubles representing slopes
+        orderOfGraph = graph.order()
+        
+        sumWeightsCoinsideringComponents = {}
+        #######################
+        components = nx.connected_components(graph)
+        #print components
+        numberOfComponents = nx.number_connected_components(graph)
+        ##print "number of components"
+        ##print numberOfComponents
+        for i in range(0,numberOfComponents):
+            ##print "comp i"
+            #print components[i]
+            for key in components[i]:
+                value = sumWeightsMetrics.get(key)
+##                print "key"
+##                print key
+##                print "value"
+##                print value
+##                print "len comp i"
+                ##print len(components[i])
+                length = len(components[i])
+                
+                componenetWeightedValue = value*length/graph.order()
+                sumWeightsCoinsideringComponents[key]=componenetWeightedValue  
+        
+        ########################
+        
+        probability = copy.deepcopy(sumWeightsCoinsideringComponents)
+        totalWeightSum = sum(sumWeightsCoinsideringComponents.values())
+        
+        
+        probability.update((x, y/totalWeightSum) for x, y in probability.items())
+##        print 'sum'
+##        print sumWeightsMetrics
+##        print 'total'
+##        print totalWeightSum
+##        print 'probability'
+##        print probability
+        nodeToAttack = weighted_random(probability)
+        #nodeWithMaxProb = max(probability, key=probability.get)
+
+        return nodeToAttack
+
+
+
+
+
 class DegreeAttackStrategy(Strategy):
     '''
     Example Degree-attack strategy implementation
@@ -113,35 +177,57 @@ class AttackerSummer(object):
         closenessWeightCalculator = ClosenessAttackStrategy()
         clusteringWeightCalculator = ClusteringAttackStrategy()
         eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
+        communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
         randomAttackCalculator = RandomAttackStrategy()
         resultDict = {}
-        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,randomAttackCalculator]
+        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
         j=0
         for i in weightList:
             tempWeight = i.run(graph,slope[j])
             j+=1
-            print tempWeight
+            #print tempWeight
             for k in tempWeight:
                 resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
         return resultDict
     
-class AttackerProbabilityNodeSelector(object):
-    
-    def run(self,graph,slope):
-        attackerSummer = AttackerSummer()
-        sumWeightsMetrics = attackerSummer.run(graph,slope)# array of doubles representing slopes
-        probability = copy.deepcopy(sumWeightsMetrics)
-        totalWeightSum = sum(sumWeightsMetrics.values())
-        probability.update((x, y/totalWeightSum) for x, y in probability.items())
-        '''print 'sum'
-        print sumWeightsMetrics
-        print 'total'
-        print totalWeightSum
-        print 'probability'
-        print probability'''
-        nodeWithMaxProb = max(probability, key=probability.get)
-
-        return nodeWithMaxProb
+##class AttackerProbabilityNodeSelector(object):
+##    
+##    def run(self,graph,slope):
+##        attackerSummer = AttackerSummer()
+##        sumWeightsMetrics = attackerSummer.run(graph,slope)# array (list) of doubles representing slopes
+##        probability = copy.deepcopy(sumWeightsMetrics)
+##        totalWeightSum = sum(sumWeightsMetrics.values())
+##        probability.update((x, y/totalWeightSum) for x, y in probability.items())
+##        '''print 'sum'
+##        print sumWeightsMetrics
+##        print 'total'
+##        print totalWeightSum
+##        print 'probability'
+##        print probability'''
+##        nodeToAttack = weighted_random(probability)
+##        #nodeWithMaxProb = max(probability, key=probability.get)
+##
+##        return nodeToAttack
         
-    
+
+
+def weighted_random(item_dict):
+    '''
+    Randomly choose an item from the dictionary keys,
+    with probability weights given in the dictionary values.
+
+    Args:
+        item_dict: a dictionary of the form:
+            {Item: weight, Item: weight}
+            where Item can be any key, and the weights are numeric.
+    '''
+    total = sum(item_dict.values())
+    choice = random.random() * total
+    counter = 0
+    for key, wgt in item_dict.items():
+        if choice < counter + wgt: 
+            return key
+        else: 
+            counter += wgt
+
     
