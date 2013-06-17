@@ -49,7 +49,12 @@ class RunManager(object):
             self.rewire_network()
             new_fitness = self.fitness(self.G)
             self.fitness_per_round.append(new_fitness)
-        return self.fitness_per_round
+        
+        # Pleaceholder for aggregating fitness per round:
+        total_fitness = 0
+        for r, f in enumerate(self.fitness_per_round):
+            total_fitness += f / (self.num_iterations - r + 1)
+        return total_fitness
         
     def build_initial_network(self):
         '''
