@@ -7,19 +7,21 @@ from GenomeAgent import Strategy
 
 class AttackerAgent(object):
 
- def __init__(self,genome=None):
-      
+    def __init__(self,genome=None): 
         self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy,EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
         maxSlopeValue = 100
         if(genome==None):
             self.genome=[]
             for i in range(len(self.strategies)*2):
                 self.genome.append(random.random()*maxSlopeValue)
-                print self.genome
+            #print self.genome
         else:
             self.genome=genome
 
- def which_node_to_attack(self,graph):
+    def get_genome(self):
+        return self.genome
+    
+    def which_node_to_attack(self,graph):
         attackerSummer = AttackerSummer()
         sumWeightsMetrics = attackerSummer.run(graph,self.genome)# array (list) of doubles representing slopes
         orderOfGraph = graph.order()
@@ -36,11 +38,11 @@ class AttackerAgent(object):
             #print components[i]
             for key in components[i]:
                 value = sumWeightsMetrics.get(key)
-##                print "key"
-##                print key
-##                print "value"
-##                print value
-##                print "len comp i"
+        ##                print "key"
+        ##                print key
+        ##                print "value"
+        ##                print value
+        ##                print "len comp i"
                 ##print len(components[i])
                 length = len(components[i])
                 
@@ -54,15 +56,15 @@ class AttackerAgent(object):
         
         
         probability.update((x, y/totalWeightSum) for x, y in probability.items())
-##        print 'sum'
-##        print sumWeightsMetrics
-##        print 'total'
-##        print totalWeightSum
-##        print 'probability'
-##        print probability
+        ##        print 'sum'
+        ##        print sumWeightsMetrics
+        ##        print 'total'
+        ##        print totalWeightSum
+        ##        print 'probability'
+        ##        print probability
         nodeToAttack = weighted_random(probability)
         #nodeWithMaxProb = max(probability, key=probability.get)
-
+        
         return nodeToAttack
 
 
