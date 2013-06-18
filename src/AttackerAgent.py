@@ -6,65 +6,99 @@ from array import *
 from GenomeAgent import Strategy
 
 class AttackerAgent(object):
-
- def __init__(self,genome=None):
-      
+    '''
+    Attacker Agent class that manages all the aspects of attack
+    '''
+    def __init__(self, genome = None):
+        '''The genome is randomly created if no list is specified with the values
+        The genome represents the slopes giving a preference to certain metrics to be used in the attack
+        
+        Args: list with genome
+        '''
         self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy,EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
         maxSlopeValue = 100
         if(genome==None):
             self.genome=[]
-            for i in range(len(self.strategies)*2):
+            for i in range(len(self.strategies)):
                 self.genome.append(random.random()*maxSlopeValue)
                 print self.genome
         else:
             self.genome=genome
 
- def which_node_to_attack(self,graph):
-        attackerSummer = AttackerSummer()
-        sumWeightsMetrics = attackerSummer.run(graph,self.genome)# array (list) of doubles representing slopes
-        orderOfGraph = graph.order()
+    def which_node_to_attack(self, graph):
+        '''Function that is used by the run manager to invoke the most important function
+        for the attack: obtaining a node to attack considereing the several metrics.
+        If the graph is disconnected the metrics are anyway computed by the default of networkX the metrics are 
+        evaluated on each component.
+        In the case of a disconnected network, the values of the metrics are weighted by the fraction of the 
+        nodes composing each component.
         
+        Args: graph that is the target of the attack
+        '''
+        sumWeightsMetrics = weightAllMetricsSum(graph,self.genome)# array (list) of doubles representing slopes
+        orderOfGraph = graph.order()
         sumWeightsCoinsideringComponents = {}
-        #######################
         components = nx.connected_components(graph)
-        #print components
         numberOfComponents = nx.number_connected_components(graph)
-        ##print "number of components"
-        ##print numberOfComponents
         for i in range(0,numberOfComponents):
-            ##print "comp i"
-            #print components[i]
             for key in components[i]:
                 value = sumWeightsMetrics.get(key)
-##                print "key"
-##                print key
-##                print "value"
-##                print value
-##                print "len comp i"
-                ##print len(components[i])
                 length = len(components[i])
-                
                 componenetWeightedValue = value*length/graph.order()
                 sumWeightsCoinsideringComponents[key]=componenetWeightedValue  
-        
-        ########################
-        
         probability = copy.deepcopy(sumWeightsCoinsideringComponents)
         totalWeightSum = sum(sumWeightsCoinsideringComponents.values())
-        
-        
         probability.update((x, y/totalWeightSum) for x, y in probability.items())
-##        print 'sum'
-##        print sumWeightsMetrics
-##        print 'total'
-##        print totalWeightSum
-##        print 'probability'
-##        print probability
         nodeToAttack = weighted_random(probability)
         #nodeWithMaxProb = max(probability, key=probability.get)
 
         return nodeToAttack
 
+def weightAllMetricsSum(graph, slope):
+    '''
+    Sums all the values of the metrics
+    
+    Args:
+    graph to compute the metrics
+    list of double containing the genome (slopes)
+    '''
+    betwennessWeightCalculator = BetweennessAttackStrategy()
+    degreeWeightCalculator = DegreeAttackStrategy()
+    closenessWeightCalculator = ClosenessAttackStrategy()
+    clusteringWeightCalculator = ClusteringAttackStrategy()
+    eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
+    communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
+    randomAttackCalculator = RandomAttackStrategy()
+    resultDict = {}
+    weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
+    j=0
+    for i in weightList:
+        tempWeight = i.run(graph,slope[j])
+        j+=1
+        #print tempWeight
+        for k in tempWeight:
+            resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
+    return resultDict
+    
+
+def weighted_random(item_dict):
+    '''
+    Randomly choose an item from the dictionary keys,
+    with probability weights given in the dictionary values.
+
+    Args:
+        item_dict: a dictionary of the form:
+            {Item: weight, Item: weight}
+            where Item can be any key, and the weights are numeric.
+    '''
+    total = sum(item_dict.values())
+    choice = random.random() * total
+    counter = 0
+    for key, wgt in item_dict.items():
+        if choice < counter + wgt: 
+            return key
+        else: 
+            counter += wgt
 
 
 
@@ -169,65 +203,5 @@ class RandomAttackStrategy(Strategy):
 
 
 
-class AttackerSummer(object):
-    
-    def run(self, graph, slope):
-        betwennessWeightCalculator = BetweennessAttackStrategy()
-        degreeWeightCalculator = DegreeAttackStrategy()
-        closenessWeightCalculator = ClosenessAttackStrategy()
-        clusteringWeightCalculator = ClusteringAttackStrategy()
-        eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
-        communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
-        randomAttackCalculator = RandomAttackStrategy()
-        resultDict = {}
-        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
-        j=0
-        for i in weightList:
-            tempWeight = i.run(graph,slope[j])
-            j+=1
-            #print tempWeight
-            for k in tempWeight:
-                resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
-        return resultDict
-    
-##class AttackerProbabilityNodeSelector(object):
-##    
-##    def run(self,graph,slope):
-##        attackerSummer = AttackerSummer()
-##        sumWeightsMetrics = attackerSummer.run(graph,slope)# array (list) of doubles representing slopes
-##        probability = copy.deepcopy(sumWeightsMetrics)
-##        totalWeightSum = sum(sumWeightsMetrics.values())
-##        probability.update((x, y/totalWeightSum) for x, y in probability.items())
-##        '''print 'sum'
-##        print sumWeightsMetrics
-##        print 'total'
-##        print totalWeightSum
-##        print 'probability'
-##        print probability'''
-##        nodeToAttack = weighted_random(probability)
-##        #nodeWithMaxProb = max(probability, key=probability.get)
-##
-##        return nodeToAttack
-        
-
-
-def weighted_random(item_dict):
-    '''
-    Randomly choose an item from the dictionary keys,
-    with probability weights given in the dictionary values.
-
-    Args:
-        item_dict: a dictionary of the form:
-            {Item: weight, Item: weight}
-            where Item can be any key, and the weights are numeric.
-    '''
-    total = sum(item_dict.values())
-    choice = random.random() * total
-    counter = 0
-    for key, wgt in item_dict.items():
-        if choice < counter + wgt: 
-            return key
-        else: 
-            counter += wgt
 
     
