@@ -110,7 +110,8 @@ class EvolutionManager(object):
             defender = self.Defender(genome=defender_genome)
             
             # Choose number of rounds at random:
-            rounds = random.randrange(5,16)
+            #rounds = random.randrange(5,16)
+            rounds = 10
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
                              self.network_size, self.edge_count)

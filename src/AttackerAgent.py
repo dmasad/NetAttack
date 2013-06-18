@@ -15,16 +15,19 @@ class AttackerAgent(object):
         
         Args: list with genome
         '''
-        self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy,EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
+        self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy(),EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
         maxSlopeValue = 100
         if(genome==None):
             self.genome=[]
             for i in range(len(self.strategies)):
                 self.genome.append(random.random()*maxSlopeValue)
-                print self.genome
+            #print self.genome
         else:
             self.genome=genome
 
+    def get_genome(self):
+        return self.genome
+    
     def which_node_to_attack(self, graph):
         '''Function that is used by the run manager to invoke the most important function
         for the attack: obtaining a node to attack considereing the several metrics.
@@ -35,7 +38,7 @@ class AttackerAgent(object):
         
         Args: graph that is the target of the attack
         '''
-        sumWeightsMetrics = weightAllMetricsSum(graph,self.genome)# array (list) of doubles representing slopes
+        sumWeightsMetrics = self.weightAllMetricsSum(graph,self.genome)# array (list) of doubles representing slopes
         orderOfGraph = graph.order()
         sumWeightsCoinsideringComponents = {}
         components = nx.connected_components(graph)
@@ -54,32 +57,35 @@ class AttackerAgent(object):
 
         return nodeToAttack
 
-def weightAllMetricsSum(graph, slope):
-    '''
-    Sums all the values of the metrics
-    
-    Args:
-    graph to compute the metrics
-    list of double containing the genome (slopes)
-    '''
-    betwennessWeightCalculator = BetweennessAttackStrategy()
-    degreeWeightCalculator = DegreeAttackStrategy()
-    closenessWeightCalculator = ClosenessAttackStrategy()
-    clusteringWeightCalculator = ClusteringAttackStrategy()
-    eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
-    communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
-    randomAttackCalculator = RandomAttackStrategy()
-    resultDict = {}
-    weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
-    j=0
-    for i in weightList:
-        tempWeight = i.run(graph,slope[j])
-        j+=1
-        #print tempWeight
-        for k in tempWeight:
-            resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
-    return resultDict
-    
+    def weightAllMetricsSum(self, graph, slope):
+        '''
+        Sums all the values of the metrics
+        
+        Args:
+        graph to compute the metrics
+        list of double containing the genome (slopes)
+        '''
+        '''
+        betwennessWeightCalculator = BetweennessAttackStrategy()
+        degreeWeightCalculator = DegreeAttackStrategy()
+        closenessWeightCalculator = ClosenessAttackStrategy()
+        clusteringWeightCalculator = ClusteringAttackStrategy()
+        eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
+        communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
+        randomAttackCalculator = RandomAttackStrategy()
+        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
+        '''
+        resultDict = {}
+        j=0
+        for i in range(len(self.strategies)):
+            strategy = self.strategies[i]
+            tempWeight = strategy.run(graph,slope[j])
+            j+=1
+            #print tempWeight
+            for k in tempWeight:
+                resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
+        return resultDict
+        
 
 def weighted_random(item_dict):
     '''
@@ -202,4 +208,53 @@ class RandomAttackStrategy(Strategy):
         return weights
 
 
+# ------------
+# TESTING TOOLS
+# -------------
+
+class StupidAttacker(AttackerAgent):
+    '''
+    Attacker Agent class which only attacks on Degree
+    '''
+    def __init__(self, genome = None):
+        '''The genome is randomly created if no list is specified with the values
+        The genome represents the slopes giving a preference to certain metrics to be used in the attack
+        
+        Args: list with genome
+        '''
+        self.strategies = [DegreeAttackStrategy()]
+        maxSlopeValue = 100
+        if(genome==None):
+            self.genome=[]
+            for i in range(len(self.strategies)):
+                self.genome.append(random.random()*maxSlopeValue)
+            #print self.genome
+        else:
+            self.genome=genome
+    
+    def weightAllMetricsSum(graph, slope):
+        '''
+        Sums all the values of the metrics
+        
+        Args:
+        graph to compute the metrics
+        list of double containing the genome (slopes)
+        '''
+        betwennessWeightCalculator = BetweennessAttackStrategy()
+        degreeWeightCalculator = DegreeAttackStrategy()
+        closenessWeightCalculator = ClosenessAttackStrategy()
+        clusteringWeightCalculator = ClusteringAttackStrategy()
+        eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
+        communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
+        randomAttackCalculator = RandomAttackStrategy()
+        resultDict = {}
+        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
+        j=0
+        for i in weightList:
+            tempWeight = i.run(graph,slope[j])
+            j+=1
+            #print tempWeight
+            for k in tempWeight:
+                resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
+        return resultDict
 

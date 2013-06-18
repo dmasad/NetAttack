@@ -266,7 +266,31 @@ class Defender(object):
         
         return new_edges
                 
-                
+
+# ------------
+# TESTING TOOLS
+# -------------
+
+
+
+class StupidDefender(Defender):
+    '''
+    A Defender agent class which only uses Preferential attachement.
+    '''
+    
+    def __init__(self,genome=None):
+       
+        self.strategies = [PreferentialAttachment()]
+        
+        if(genome==None):
+            #self.genome=[1,0,0,0,0,0,0,0]
+            self.genome=[]
+            for i in range(len(self.strategies)*2):
+                self.genome.append(random.random()*100)
+            #print self.genome
+        else:
+            self.genome=genome
+         
                 
        
         
