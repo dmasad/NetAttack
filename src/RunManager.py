@@ -76,17 +76,20 @@ class RunManager(object):
 
     
     def rewire_network(self):
-        '''
-        The defender rewires the network.
-        '''
-        # Rewire the disconnected nodes
-        edges_to_rewire=self.defender.rewire(self.nodes_lost_edges, self.G)
-        
-        # Reinsert the removed nodes, with only one edge.
-        self.G.add_node(self.attacked_node)
-        edges_to_rewire +=  self.defender.rewire([self.attacked_node], self.G)
-        self.G.add_edges_from(edges_to_rewire)
-
+            '''
+            The defender rewires the network.
+            '''
+            edges_to_rewire=[]
+            # Rewire the disconnected nodes
+            if(len(self.nodes_lost_edges)>0):
+                t=random.randrange(len(self.nodes_lost_edges))
+                self.nodes_lost_edges.remove(self.nodes_lost_edges[t])
+                edges_to_rewire=self.defender.rewire(self.nodes_lost_edges, self.G)
+            
+            # Reinsert the removed nodes, with only one edge.
+            self.G.add_node(self.attacked_node)
+            edges_to_rewire +=  self.defender.rewire([self.attacked_node], self.G)
+            self.G.add_edges_from(edges_to_rewire)
 
     
 

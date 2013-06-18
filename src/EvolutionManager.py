@@ -121,8 +121,8 @@ class EvolutionManager(object):
         # (If parallelizing, put that here.)
         for run in runs:
             fitness = run.run()
-            self.current_fitness["attackers"][run.attacker.get_genome()] = fitness
-            self.current_fitness["defenders"][run.defender.get_genome()] = (1 - fitness)
+            self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
+            self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
         
     def breed_next_generation(self):
         '''
@@ -132,11 +132,12 @@ class EvolutionManager(object):
         self.current_generation += 1
         
         # Breed attackers:
-        for breed in ["attackers, defenders"]:
+        for breed in ["attackers", "defenders"]:
+        
             while len(self.generations[self.current_generation][breed]) < self.pop_size:
                 # Pick two parents
-                parent1 = weighted_random(self.current_fitness[breed])
-                parent2 = weighted_random(self.current_fitness[breed])
+                parent1 = list(weighted_random(self.current_fitness[breed]))
+                parent2 = list(weighted_random(self.current_fitness[breed]))
                 for i in range(self.offspring):
                     child = self.crossover(parent1, parent2)
                     child = self.mutate(child)
