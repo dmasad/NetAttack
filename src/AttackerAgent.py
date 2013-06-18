@@ -231,30 +231,4 @@ class StupidAttacker(AttackerAgent):
             #print self.genome
         else:
             self.genome=genome
-    
-    def weightAllMetricsSum(graph, slope):
-        '''
-        Sums all the values of the metrics
-        
-        Args:
-        graph to compute the metrics
-        list of double containing the genome (slopes)
-        '''
-        betwennessWeightCalculator = BetweennessAttackStrategy()
-        degreeWeightCalculator = DegreeAttackStrategy()
-        closenessWeightCalculator = ClosenessAttackStrategy()
-        clusteringWeightCalculator = ClusteringAttackStrategy()
-        eigenvectorCentralityWeightCalculator = EigenvectorCentralityAttackStrategy()
-        communicabilityCentralityWeightCalculator = CommunicabilityCentralityAttackStrategy()
-        randomAttackCalculator = RandomAttackStrategy()
-        resultDict = {}
-        weightList = [betwennessWeightCalculator,degreeWeightCalculator,closenessWeightCalculator,clusteringWeightCalculator,eigenvectorCentralityWeightCalculator,communicabilityCentralityWeightCalculator,randomAttackCalculator]
-        j=0
-        for i in weightList:
-            tempWeight = i.run(graph,slope[j])
-            j+=1
-            #print tempWeight
-            for k in tempWeight:
-                resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
-        return resultDict
 

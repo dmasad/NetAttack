@@ -52,8 +52,9 @@ class RunManager(object):
         
         # Pleaceholder for aggregating fitness per round:
         total_fitness = 0
-        for r, f in enumerate(self.fitness_per_round):
-            total_fitness += f / (self.num_iterations - r + 1)
+        for f in self.fitness_per_round:
+            total_fitness += f
+        total_fitness /= (1.0 * self.num_iterations)
         return total_fitness
         
     def build_initial_network(self):
