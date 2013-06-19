@@ -38,11 +38,14 @@ class AttackerAgent(object):
         
         Args: graph that is the target of the attack
         '''
+        self.graphToAttack = graph
+        
         sumWeightsMetrics = self.weightAllMetricsSum(graph,self.genome)# array (list) of doubles representing slopes
         orderOfGraph = graph.order()
         sumWeightsCoinsideringComponents = {}
         components = nx.connected_components(graph)
         numberOfComponents = nx.number_connected_components(graph)
+        #print components
         for i in range(0,numberOfComponents):
             for key in components[i]:
                 value = sumWeightsMetrics.get(key)
@@ -51,10 +54,15 @@ class AttackerAgent(object):
                 sumWeightsCoinsideringComponents[key]=componenetWeightedValue  
         probability = copy.deepcopy(sumWeightsCoinsideringComponents)
         totalWeightSum = sum(sumWeightsCoinsideringComponents.values())
-        probability.update((x, y/totalWeightSum) for x, y in probability.items())
-        nodeToAttack = weighted_random(probability)
+        #print totalWeightSum
+        if totalWeightSum == 0: #it means there is no strategy that the attacker can do, our choice so far is to go with a random node
+            #totalWeightSum = 1
+            nodeToAttack = random.choice(graph.nodes())
+        else:
+            probability.update((x, y/totalWeightSum) for x, y in probability.items())
+            nodeToAttack = weighted_random(probability)
         #nodeWithMaxProb = max(probability, key=probability.get)
-
+        #print nodeToAttack
         return nodeToAttack
 
     def weightAllMetricsSum(self, graph, slope):
@@ -170,10 +178,16 @@ class EigenvectorCentralityAttackStrategy(Strategy):
     '''
     
     def run(self, graph, slope):
-        eigenvector_data = nx.eigenvector_centrality(graph)
         weights = {}
+        try:
+            eigenvector_data = nx.eigenvector_centrality(graph)
+        except: # catch *all* exceptions
+            eigenvector_data = {}
+            for node in range(0,graph.order()):
+                eigenvector_data[node]= 0
         for node, eigenv in eigenvector_data.items():
             weights[node] = eigenvector_data[node] * slope
+            #print weights
         return weights
     
     
@@ -227,7 +241,7 @@ class StupidAttacker(AttackerAgent):
         if(genome==None):
             self.genome=[]
             for i in range(len(self.strategies)):
-                self.genome.append(random.random()*maxSlopeValue)
+                self.genome.append(random.random()*maxSlopeValue+0.1)
             #print self.genome
         else:
             self.genome=genome
