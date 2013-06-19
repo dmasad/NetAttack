@@ -4,6 +4,7 @@ Created on Jun 15, 2013
 @author: dmasad
 '''
 import random
+import csv
 from collections import defaultdict
 
 from RunManager import RunManager
@@ -37,7 +38,8 @@ class EvolutionManager(object):
 
     def __init__(self, Attacker, Defender,
                  network_size, edge_count, fitness,
-                 pop_size, generation_count, offspring, mutation_rate):
+                 pop_size, generation_count, offspring, mutation_rate, instant_rewire,
+                 output = False):
         '''
         Create a new complete coevolution run.
         
@@ -50,6 +52,8 @@ class EvolutionManager(object):
             offspring: Number of offspring for each pair of agents
             generation_count: The number of generations to run for
             mutation_rate: The rate of mutation
+            instant_rewire: If True, the fitness each round of each run 
+                            is not recomputed until the network finishes rewiring.
         '''
         self.Attacker = Attacker
         self.Defender = Defender
@@ -60,7 +64,8 @@ class EvolutionManager(object):
         self.generation_count = generation_count
         self.offspring = offspring
         self.mutation_rate = mutation_rate
-        
+        self.instant_rewire = instant_rewire
+        self.output = output
         
         # Create the generation container
         self.current_generation = 0
@@ -75,15 +80,32 @@ class EvolutionManager(object):
             new_defender = self.Defender()
             self.generations[0]["defenders"].append(new_defender.get_genome())
         
+        # Prepare output files:
+        if self.output:
+            self.attacker_records_file = open("attackers.csv", "wb")
+            self.attacker_writer = csv.writer(self.attacker_records_file)
+            self.attacker_writer.writerow(["Generation", "ID", "Fitness"])
+            
+            self.defender_records_file = open("defenders.csv", "wb")
+            self.defender_writer = csv.writer(self.defender_records_file)
+            self.defender_writer.writerow(["Generation", "ID", "Fitness"])
+            
+        
     
-    def run(self):
+    def run(self, verbose=False):
         '''
         Runs a full evolutionary cycle.
         '''
         
         while self.current_generation < self.generation_count:
+            if verbose:
+                print "Running generation", self.current_generation
             self.run_generation()
             self.breed_next_generation()
+        
+        if self.output:
+            self.attacker_records_file.close()
+            self.defender_records_file.close()
         
     
     def run_generation(self):
@@ -114,7 +136,7 @@ class EvolutionManager(object):
             rounds = 10
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
-                             self.network_size, self.edge_count)
+                             self.network_size, self.edge_count, self.instant_rewire)
             runs.append(run)
         
         self.current_fitness = {"attackers": {}, "defenders": {}}
@@ -124,6 +146,23 @@ class EvolutionManager(object):
             fitness = run.run()
             self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
             self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
+        
+        # File output:
+        if self.output:
+            i = 0
+            for genome, fitness in self.current_fitness["attackers"].items():
+                row = [self.current_generation, i, fitness] + list(genome)
+                self.attacker_writer.writerow(row)
+                i += 1
+            
+            i = 0
+            for genome, fitness in self.current_fitness["defenders"].items():
+                row = [self.current_generation, i, fitness] + list(genome)
+                self.defender_writer.writerow(row)
+                i += 1
+         
+                
+            
         
     def breed_next_generation(self):
         '''

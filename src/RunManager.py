@@ -12,7 +12,8 @@ class RunManager(object):
     The object that manages a single run of the model.
     '''
 
-    def __init__(self, attacker, defender, num_iterations, fitness, node_count, edge_count):
+    def __init__(self, attacker, defender, num_iterations, fitness, 
+                 node_count, edge_count, instant_rewire=False):
         '''
         Create a new Run Manager.
         
@@ -23,6 +24,8 @@ class RunManager(object):
             fitness: A function computing the network metric used as fitness.
             node_count: How many nodes the network has.
             edge_count: How many edges the network (initially) has
+            instant_rewire: If True, the fitness is not recomputed until the 
+                            network finishes rewiring.
         '''
         
         self.attacker = attacker
@@ -30,6 +33,7 @@ class RunManager(object):
         self.node_count = node_count
         self.initial_edges = edge_count
         self.nodes_lost_edges = [] # Nodes with disconnected edges
+        self.instant_rewire = instant_rewire
     
         self.num_iterations = num_iterations # Number of iterations per round
         self.G = nx.Graph()
@@ -47,14 +51,12 @@ class RunManager(object):
         for round in range(self.num_iterations):
             self.attack_network()
             self.rewire_network()
-            new_fitness = self.fitness(self.G)
-            self.fitness_per_round.append(new_fitness)
         
         # Pleaceholder for aggregating fitness per round:
         total_fitness = 0
         for f in self.fitness_per_round:
             total_fitness += f
-        total_fitness /= (1.0 * self.num_iterations)
+        total_fitness /= (1.0 * len(self.fitness_per_round))
         return total_fitness
         
     def build_initial_network(self):
@@ -85,12 +87,33 @@ class RunManager(object):
             if(len(self.nodes_lost_edges)>0):
                 t=random.randrange(len(self.nodes_lost_edges))
                 self.nodes_lost_edges.remove(self.nodes_lost_edges[t])
-                edges_to_rewire=self.defender.rewire(self.nodes_lost_edges, self.G)
             
-            # Reinsert the removed nodes, with only one edge.
+            if self.instant_rewire:
+                # Rewire without recomputing fitness
+                edges_to_rewire=self.defender.rewire(self.nodes_lost_edges, self.G)
+                self.G.add_edges_from(edges_to_rewire)
+        
+            else:
+                # Recompute fitness after each rewiring
+                for node in self.nodes_lost_edges:
+                    edges_to_rewire = self.defender.rewire([node], self.G)
+                    self.G.add_edges_from(edges_to_rewire)
+                    new_fitness = self.fitness(self.G)
+                    self.fitness_per_round.append(new_fitness)
+                    
+            # Reinsert the disconnected node and rewire
             self.G.add_node(self.attacked_node)
-            edges_to_rewire +=  self.defender.rewire([self.attacked_node], self.G)
+            edges_to_rewire = self.defender.rewire([self.attacked_node], self.G)
             self.G.add_edges_from(edges_to_rewire)
+            new_fitness = self.fitness(self.G)
+            self.fitness_per_round.append(new_fitness)
+
+                
+                
+                    
+                
+            
+
 
     
 

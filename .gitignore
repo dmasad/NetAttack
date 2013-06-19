@@ -4,3 +4,7 @@
 .pydevproject
 
 *.pyc
+
+*.csv
+
+.DS_Store
