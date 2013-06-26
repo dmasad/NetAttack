@@ -108,12 +108,6 @@ class RunManager(object):
             new_fitness = self.fitness(self.G)
             self.fitness_per_round.append(new_fitness)
 
-                
-                
-                    
-                
-            
-
 
     
 
