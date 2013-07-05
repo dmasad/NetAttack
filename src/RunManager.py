@@ -143,7 +143,7 @@ class RunManager(object):
         graphDict = json_graph.node_link_data(currentGraphCopy)
         s = json.dumps(graphDict)
         toBeDumpedToJsonDict = {'generation': self.currentGeneration, 'id': self.currentId, 'round': currentRoundCopy, 'graph': s}
-        with open('data.txt', mode='a') as jsonfile:
+        with open('data.json', mode='a') as jsonfile:
                 json.dump(toBeDumpedToJsonDict,jsonfile)
                 jsonfile.write("\n")
         
