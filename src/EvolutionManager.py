@@ -79,7 +79,7 @@ class EvolutionManager(object):
         self.currentGraph = initial_graph
         self.self_assembly_graph = self_assembly_graph
         
-        open('data.txt', mode='w')
+        open('data.json', mode='w')
         
         
         
