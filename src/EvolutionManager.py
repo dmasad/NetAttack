@@ -6,6 +6,7 @@ Created on Jun 15, 2013
 import random
 import csv
 from collections import defaultdict
+import networkx as nx
 
 from RunManager import *
 
@@ -114,8 +115,11 @@ class EvolutionManager(object):
             self.breed_next_generation()
         
         if self.output:
-            self.attacker_records_file.close()
-            self.defender_records_file.close()
+            try:
+                self.attacker_records_file.close()
+                self.defender_records_file.close()
+            except:
+                pass
         
     
     def run_generation(self):
@@ -189,18 +193,50 @@ class EvolutionManager(object):
         self.current_generation += 1
         
         # Breed attackers:
-        for breed in ["attackers", "defenders"]:        
+        for breed in ["attackers", "defenders"]:
+        
             while len(self.generations[self.current_generation][breed]) < self.pop_size:
                 # Pick two parents
                 parent1 = list(weighted_random(self.current_fitness[breed]))
                 parent2 = list(weighted_random(self.current_fitness[breed]))
-                #print parent1
-                #print parent2
-
                 for i in range(self.offspring):
                     child = self.crossover(parent1, parent2)
                     child = self.mutate(child)
-                    self.generations[self.current_generation][breed].append(child)           
+                    self.generations[self.current_generation][breed].append(child)                
+    
+    
+    def load_data(self, attacker_file, defender_file, generation):
+        '''
+        Load genomes from previous attacker and defender files previously created. 
+        '''
+        # Load attackers:
+        f = open(attacker_file)
+        for row in f:
+            row = row.split(",")
+            try:
+                if int(row[0]) != generation: continue
+            except:
+                continue
+            else:
+                genome = [float(g) for g in row[3:]]
+                self.generations[generation]["attackers"].append(genome)
+        f.close()
+        
+        # Load defenders
+        f = open(defender_file)
+        for row in f:
+            row = row.split(",")
+            try:
+                if int(row[0]) != generation: continue
+            except: 
+                continue
+            else:
+                genome = [float(g) for g in row[3:]]
+                self.generations[generation]["defenders"].append(genome)
+        f.close()
+        
+        self.current_generation = generation
+            
     
     # -----------------
     # Genetic functions
@@ -226,5 +262,111 @@ class EvolutionManager(object):
                 if gene > 100: gene = 100
             new_genome.append(gene)
         return new_genome
+            
+            
+        
+class SingleEvolutionManager(EvolutionManager):
+    '''
+    Class to manage the evolution of a network against a fixed fitness function.
+    '''
+
+    def __init__(self, Defender,
+                 network_size, edge_count, fitness,
+                 pop_size, generation_count, offspring, mutation_rate,
+                 output = False):
+        '''
+        Create a new complete evolution run.
+        
+        Args:
+            Defender: The Defender class
+            network_size: The number of nodes in each network
+            edge_count: The number of edges in each network
+            pop_size: Number of attackers and defenders in each generation
+            offspring: Number of offspring for each pair of agents
+            generation_count: The number of generations to run for
+            mutation_rate: The rate of mutation
+            instant_rewire: If True, the fitness each round of each run 
+                            is not recomputed until the network finishes rewiring.
+        '''
+        self.Defender = Defender
+        self.network_size = network_size
+        self.edge_count = edge_count
+        self.fitness = fitness
+        self.pop_size = pop_size
+        self.generation_count = generation_count
+        self.offspring = offspring
+        self.mutation_rate = mutation_rate
+        self.output = output
+        
+        # Create the generation container
+        self.current_generation = 0
+        self.generations = defaultdict(list)
+        
+        self.current_population = []
+        
+        # Create generation 0:
+        for i in range(pop_size):
+            new_defender = self.Defender()
+            self.generations[0].append(new_defender.get_genome())
+        
+        # Prepare output files:
+        if self.output:
+            self.defender_records_file = open("defenders" + self.output + ".csv", "wb")
+            self.defender_writer = csv.writer(self.defender_records_file)
+            self.defender_writer.writerow(["Generation", "ID", "Fitness"])
+        
+
     
+    def run_generation(self):
+        '''
+        Run one generation and get fitnesses.
+        
+        Pair attacker and defenders at random.
+        '''
+        self.current_fitness = {}
+        
+        for genome in self.generations[self.current_generation]:
+            # Build the network and evaluate:
+            defender = self.Defender(genome)
+            # Build the network:
+            G = nx.Graph()
+            G.add_nodes_from(range(self.network_size))
+            for i in range(self.edge_count):
+                node = random.choice(G.nodes()) # Pick a random starting node
+                new_edge = defender.rewire([node], G)
+                G.add_edges_from(new_edge)
+            # Measure fitness:
+            self.current_fitness[tuple(defender.get_genome())] = self.fitness(G)
+
+        # File output:
+        if self.output:
+            i = 0
+            for genome, fitness in self.current_fitness.items():
+                row = [self.current_generation, i, fitness] + list(genome)
+                self.defender_writer.writerow(row)
+                i += 1
+        
     
+            
+        
+    def breed_next_generation(self):
+        '''
+        Take the previous generation's fitness and create a new generation.
+        '''
+        
+        self.current_generation += 1
+        
+        # Breed attackers:        
+        while len(self.generations[self.current_generation]) < self.pop_size:
+            # Pick two parents
+            parent1 = list(weighted_random(self.current_fitness))
+            parent2 = list(weighted_random(self.current_fitness))
+            for i in range(self.offspring):
+                child = self.crossover(parent1, parent2)
+                child = self.mutate(child)
+                self.generations[self.current_generation].append(child)
+     
+    
+        
+        
+        
