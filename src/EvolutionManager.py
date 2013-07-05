@@ -7,7 +7,7 @@ import random
 import csv
 from collections import defaultdict
 
-from RunManager import RunManager
+from RunManager import *
 
 
 
@@ -36,9 +36,8 @@ class EvolutionManager(object):
     '''
 
 
-    def __init__(self, Attacker, Defender,
-                 network_size, edge_count, fitness,
-                 pop_size, generation_count, offspring, mutation_rate, instant_rewire,
+    def __init__(self, Attacker, Defender, network_size, edge_count, fitness,
+                 pop_size, generation_count, offspring, mutation_rate, initial_graph, instant_rewire, self_assembly_graph = True,
                  output = False):
         '''
         Create a new complete coevolution run.
@@ -52,6 +51,8 @@ class EvolutionManager(object):
             offspring: Number of offspring for each pair of agents
             generation_count: The number of generations to run for
             mutation_rate: The rate of mutation
+            initial_graph: An external graph to be used as initial graph of attack/rewire
+            self_assembly_graph: If True, the build of the graph is done by the defender otherwise a valid graph must be provided (previous parameter)
             instant_rewire: If True, the fitness each round of each run 
                             is not recomputed until the network finishes rewiring.
         '''
@@ -72,6 +73,15 @@ class EvolutionManager(object):
         self.generations = defaultdict(lambda: {"attackers": [], "defenders": []})
         
         self.current_population = {"attackers": [], "defenders": []}
+        
+        
+        self.currentGraph = initial_graph
+        self.self_assembly_graph = self_assembly_graph
+        
+        open('data.txt', mode='w')
+        
+        
+        
         
         # Create generation 0:
         for i in range(pop_size):
@@ -119,6 +129,7 @@ class EvolutionManager(object):
         defenders = range(self.pop_size)
         
         runs = []
+        j=0
         # Prepare runs:
         while len(attackers) > 0:
             # Pick the attacker and defender:
@@ -136,13 +147,19 @@ class EvolutionManager(object):
             rounds = 10
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
-                             self.network_size, self.edge_count, self.instant_rewire)
+                             self.network_size, self.edge_count, self.currentGraph, self.self_assembly_graph, self.instant_rewire)
+            
             runs.append(run)
         
         self.current_fitness = {"attackers": {}, "defenders": {}}
         # Execute all runs and compute fitness
         # (If parallelizing, put that here.)
         for run in runs:
+            
+            ##set the parameters required to create the JSON dictionary
+            run.jsonParamSet(self.current_generation,j)
+            j +=1
+            
             fitness = run.run()
             self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
             self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
@@ -172,16 +189,18 @@ class EvolutionManager(object):
         self.current_generation += 1
         
         # Breed attackers:
-        for breed in ["attackers", "defenders"]:
-        
+        for breed in ["attackers", "defenders"]:        
             while len(self.generations[self.current_generation][breed]) < self.pop_size:
                 # Pick two parents
                 parent1 = list(weighted_random(self.current_fitness[breed]))
                 parent2 = list(weighted_random(self.current_fitness[breed]))
+                #print parent1
+                #print parent2
+
                 for i in range(self.offspring):
                     child = self.crossover(parent1, parent2)
                     child = self.mutate(child)
-                    self.generations[self.current_generation][breed].append(child)                
+                    self.generations[self.current_generation][breed].append(child)           
     
     # -----------------
     # Genetic functions
@@ -207,11 +226,5 @@ class EvolutionManager(object):
                 if gene > 100: gene = 100
             new_genome.append(gene)
         return new_genome
-            
-            
-        
-        
-        
-        
-        
-        
+    
+    
