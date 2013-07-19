@@ -20,7 +20,7 @@ class RunManager(object):
     '''
 
     def __init__(self, attacker, defender, num_iterations, fitness, 
-                 node_count, edge_count, initial_graph, self_assembly_graph=True, instant_rewire=False):
+                 node_count, edge_count, initial_graph, generation,id,self_assembly_graph=True, instant_rewire=False,attacker_resources=1,defender_resources=1,file_path="",file_name_appendix=""):
         '''
         Create a new Run Manager.
         
@@ -35,15 +35,27 @@ class RunManager(object):
             self_assembly_graph: If True, the build of the graph is done by the defender otherwise a valid graph must be provided (previous parameter) 
             instant_rewire: If True, the fitness is not recomputed until the 
                             network finishes rewiring.
+            attacker_resources: number of nodes that can be removed by the attacker in each round
+            defender_resources: number of nodes that can be rewired by the defender in each round
+            file_name_appendix: the file name for the json/gephi file is modified with the respective string, if this parameter is set 
+            file_path: optional path that you can specify - the jason/gephi output files are written there. 
         '''
         
         self.attacker = attacker
         self.defender = defender
         self.node_count = node_count
         self.initial_edges = edge_count
-        self.nodes_lost_edges = [] # Nodes with disconnected edges
+        self.nodes_lost_edges = None # Nodes with disconnected edges
         self.instant_rewire = instant_rewire
         self.self_assembly_graph = self_assembly_graph
+        self.node_distribution =[]
+        self.attacker_resources = attacker_resources
+        self.defender_resources = defender_resources
+        self.removed_nodes = []
+        self.file_path=file_path
+        self.file_name_appendix=file_name_appendix
+        
+        self.gephi_out=False
     
         self.num_iterations = num_iterations # Number of iterations per round
         
@@ -59,8 +71,8 @@ class RunManager(object):
         self.fitness_per_round = []
         self.jsonRunParam = {}
         
-        self.currentGeneration =0
-        self.currentId=0
+        self.currentGeneration =generation
+        self.currentId=id
         
     def run(self):
         '''
@@ -70,10 +82,14 @@ class RunManager(object):
             self.build_initial_network() 
         new_fitness = self.fitness(self.G)
         self.fitness_per_round.append(new_fitness)
-        for round in range(self.num_iterations):
+        self.round=-1
+        self.writeGephi(0)
+        
+        for self.round in range(self.num_iterations):
             self.attack_network()
             self.currentGraph = self.rewire_network()
-            self.writeRoundByRoundJson(round,self.currentGraph)
+            #self.writeRoundByRoundJson(round,self.currentGraph)
+            
 
         
         # Pleaceholder for aggregating fitness per round:
@@ -97,41 +113,101 @@ class RunManager(object):
         '''
         The attacker picks a node to remove, and its neighbors are stored.
         '''
-        self.attacked_node=self.attacker.which_node_to_attack(self.G)  
-        self.nodes_lost_edges=self.G.neighbors(self.attacked_node)
-        self.G.remove_node(self.attacked_node)
-
+        self.attacked_nodes=[]
+        '''
+        No node has lost a neighbor in the beginning, we therefore set the
+        respective value in the dictionary to 0 for all nodes
+        ''' 
+        self.nodes_lost_edges={x: 0 for x in self.G.nodes()}
+        
+        '''
+        We attack the network as many times as our resources allow
+        In case that a node is removed that lost neighbors,
+        we set the number of edges lost to 0
+        '''
+        for i in range(self.attacker_resources):
+            a=self.attacker.which_node_to_attack(self.G)  
+            
+            lost_neighbors=self.G.neighbors(a)
+            for n in lost_neighbors:
+                self.nodes_lost_edges[n]=self.nodes_lost_edges[n]+1
+            self.nodes_lost_edges[a]=0
+            self.G.remove_node(a)
+            self.attacked_nodes.append(a)
     
     def rewire_network(self):
             '''
             The defender rewires the network.
             '''
             edges_to_rewire=[]
-            # Rewire the disconnected nodes
-            if(len(self.nodes_lost_edges)>0):
-                t=random.randrange(len(self.nodes_lost_edges))
-                self.nodes_lost_edges.remove(self.nodes_lost_edges[t])
+            rewiring=-1
+            self.writeGephi(rewiring)
             
-            if self.instant_rewire:
-                # Rewire without recomputing fitness
-                edges_to_rewire=self.defender.rewire(self.nodes_lost_edges, self.G)
+            self.G.add_nodes_from(self.attacked_nodes)
+            '''
+            first rewire edges of nodes
+            that were removed from the network            
+            '''
+            budget=self.defender_resources
+            while budget>0 and len(self.attacked_nodes)>0:
+                node_to_rewire=self.attacked_nodes.pop()
+                edges_to_rewire=self.defender.rewire([node_to_rewire], self.G)
                 self.G.add_edges_from(edges_to_rewire)
-        
-            else:
-                # Recompute fitness after each rewiring
-                for node in self.nodes_lost_edges:
-                    edges_to_rewire = self.defender.rewire([node], self.G)
-                    self.G.add_edges_from(edges_to_rewire)
-                    new_fitness = self.fitness(self.G)
-                    self.fitness_per_round.append(new_fitness)
+                new_fitness = self.fitness(self.G)
+                self.fitness_per_round.append(new_fitness)
+                budget=budget-1
+                rewiring+=1
+                self.writeGephi(rewiring)
+                
+                
+                
+            '''
+            Create a random list from the nodes that lost edges
+            in the previous attack
+            '''
+            list_nodes_lost_edges=[]
+            for node,nmb in self.nodes_lost_edges.items():
+                for i in range(nmb):
+                    list_nodes_lost_edges.append(node)
                     
-            # Reinsert the disconnected node and rewire
-            self.G.add_node(self.attacked_node)
-            edges_to_rewire = self.defender.rewire([self.attacked_node], self.G)
-            self.G.add_edges_from(edges_to_rewire)
-            new_fitness = self.fitness(self.G)
-            self.fitness_per_round.append(new_fitness)
+            random.shuffle(list_nodes_lost_edges)
+
+            while budget>0 and len(list_nodes_lost_edges)>0:
+                node_to_rewire=list_nodes_lost_edges.pop()
+                edges_to_rewire=self.defender.rewire([node_to_rewire], self.G)
+                self.G.add_edges_from(edges_to_rewire)
+                new_fitness = self.fitness(self.G)
+                self.fitness_per_round.append(new_fitness)
+                budget=budget-1
+                rewiring+=1
+                self.writeGephi(rewiring)
+                
+            '''
+            If there are still some resources left, we start rewiring random nodes from the 
+            network
+            '''
+            
+            all_nodes_in_network=self.G.nodes()
+            random.shuffle(all_nodes_in_network)
+            while budget>0 and len(all_nodes_in_network)>0:
+                node_to_rewire=all_nodes_in_network.pop()
+                edges_to_rewire=self.defender.rewire([node_to_rewire], self.G)
+                self.G.add_edges_from(edges_to_rewire)
+                new_fitness = self.fitness(self.G)
+                self.fitness_per_round.append(new_fitness)
+                budget=budget-1
+                rewiring+=1
+                self.writeGephi(rewiring)
+           
             return self.G
+        
+    def writeGephi(self,rewiring):
+        '''
+        Writes network as single network file to disk
+        Format: gephi gexf                
+        '''
+        if self.gephi_out:
+            nx.write_gexf(self.G, str(self.file_path)+'/gephi_output/net_data_g'+str(self.currentGeneration)+"ID"+str(self.currentId)+"R"+str(self.round)+"RW"+str(rewiring)+str(self.file_name_appendix)+".gexf")
             
     def writeRoundByRoundJson (self,round,graph):
         '''
@@ -143,15 +219,42 @@ class RunManager(object):
         graphDict = json_graph.node_link_data(currentGraphCopy)
         s = json.dumps(graphDict)
         toBeDumpedToJsonDict = {'generation': self.currentGeneration, 'id': self.currentId, 'round': currentRoundCopy, 'graph': s}
-        with open('data.json', mode='a') as jsonfile:
+        with open(str(self.file_path)+'data'+str(self.file_name_appendix)+'.json', mode='a') as jsonfile:
                 json.dump(toBeDumpedToJsonDict,jsonfile)
                 jsonfile.write("\n")
         
                 
                 
-    def jsonParamSet (self,generation,id,):
+    def jsonParamSet (self,generation,id):
         '''
             The function sets the values for properties (this function is called by the EvolutionManager)
             '''
         self.currentGeneration = generation
         self.currentId = id
+        
+    def get_node_distribution(self):
+        '''
+        This function is used to update the node distribution in the network that is handled
+        by this run manager
+        The node distribution is printed to disk to be used for the statistical analysis of the network structure        
+        '''
+        helper=[float(0) for i in range(self.node_count)]
+        for i in (self.node_distribution):
+            for j in range(self.node_count):
+                if j in i:
+                    helper[j]+=float(i[j])
+        
+        for i in range(self.node_count):
+            helper[i]/=(float(len(self.node_distribution)+0.00001))
+            
+        return(helper)
+    
+    def get_diameter(self):
+        '''
+        This function returns the diameter of the current network      
+        It returns -1 if there is more than one component in the network  
+        '''
+        diameter=-1
+        if nx.is_connected(self.G):
+           diameter=nx.diameter(self.G)
+        return diameter

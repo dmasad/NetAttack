@@ -3,6 +3,7 @@ import random
 import networkx as nx
 import copy
 from array import *
+from DefenderAgent import Weights
 
 from GenomeAgent import Strategy
 
@@ -17,10 +18,12 @@ class AttackerAgent(object):
         Args: list with genome
         '''
         self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy(),EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
+#        self.strategies = [DegreeAttackStrategy()]
+
         maxSlopeValue = 100
         if(genome==None):
             self.genome=[]
-            for i in range(len(self.strategies)):
+            for i in range(len(self.strategies)*2):
                 self.genome.append(random.random()*maxSlopeValue)
             #print self.genome
         else:
@@ -88,11 +91,13 @@ class AttackerAgent(object):
         j=0
         for i in range(len(self.strategies)):
             strategy = self.strategies[i]
-            tempWeight = strategy.run(graph,slope[j])
+            tempWeight = strategy.run(graph,slope[j*2],slope[j*2+1])
             j+=1
             #print tempWeight
-            for k in tempWeight:
-                resultDict[k] = resultDict.get(k, 0)+tempWeight.get(k, 0)
+            for k in tempWeight.get_weights():
+                resultDict[k] = resultDict.get(k, 0)+tempWeight.get_weights().get(k, 0)
+                resultDict[k] = resultDict.get(k, 0)+tempWeight.get_oweights().get(k, 0)
+                
         return resultDict
         
 
@@ -123,24 +128,29 @@ class DegreeAttackStrategy(Strategy):
     Example Degree-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         degree_data = nx.degree_centrality(graph)
         weights = {}
+        oweights={}
         for node, deg in degree_data.items():
             weights[node] = degree_data[node] * slope
-        return weights
-    
+            oweights[node] = (1-degree_data[node])*slope1 
+        
+        return Weights(weights,oweights)
+      
 class BetweennessAttackStrategy(Strategy):
     '''
     Example Betweenness Centality-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         betweenness_data = nx.betweenness_centrality(graph)
         weights = {}
+        oweights = {}
         for node, betw in betweenness_data.items():
             weights[node] = betweenness_data[node] * slope
-        return weights
+            oweights[node] = (1-betweenness_data[node]) * slope1
+        return Weights(weights,oweights)
 
 
 
@@ -149,12 +159,15 @@ class ClosenessAttackStrategy(Strategy):
     Example Closeness Centality-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         closeness_data = nx.closeness_centrality(graph)
         weights = {}
+        oweights={}
         for node, close in closeness_data.items():
             weights[node] = closeness_data[node] * slope
-        return weights
+            oweights[node] = (1-closeness_data[node]) * slope1
+
+        return Weights(weights,oweights)
 
 
 
@@ -163,12 +176,15 @@ class ClusteringAttackStrategy(Strategy):
     Example clustering-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         clustering_data = nx.clustering(graph)
         weights = {}
+        oweights={}
         for node, cluster in clustering_data.items():
             weights[node] = clustering_data[node] * slope
-        return weights
+            oweights[node] = (1-clustering_data[node]) * slope1
+
+        return Weights(weights,oweights)
 
 
 
@@ -178,8 +194,9 @@ class EigenvectorCentralityAttackStrategy(Strategy):
     Example eigenvector centrality-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         weights = {}
+        oweights={}
         try:
             eigenvector_data = nx.eigenvector_centrality(graph)
         except: # catch *all* exceptions
@@ -188,8 +205,10 @@ class EigenvectorCentralityAttackStrategy(Strategy):
                 eigenvector_data[node]= 0
         for node, eigenv in eigenvector_data.items():
             weights[node] = eigenvector_data[node] * slope
+            oweights[node] = (1-eigenvector_data[node]) * slope1
+            
             #print weights
-        return weights
+        return Weights(weights,oweights)
     
     
 class CommunicabilityCentralityAttackStrategy(Strategy):
@@ -197,13 +216,16 @@ class CommunicabilityCentralityAttackStrategy(Strategy):
     Example communicability centrality-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         communicability_data = nx.communicability_centrality(graph)
         weights = {}
+        oweights={}
         max_comm_for_normaliz = max(communicability_data.values())
         for node, commu in communicability_data.items():
             weights[node] = communicability_data[node] * slope / max_comm_for_normaliz
-        return weights
+            oweights[node] = (1-communicability_data[node]) * slope1 / max_comm_for_normaliz
+        
+        return Weights(weights,oweights)
 
 
 class RandomAttackStrategy(Strategy):
@@ -211,16 +233,19 @@ class RandomAttackStrategy(Strategy):
     Examplerandom-attack strategy implementation
     '''
     
-    def run(self, graph, slope):
+    def run(self, graph, slope,slope1):
         num_nodes = graph.order()
         node_to_attack = random.randint(0,num_nodes)
         weights = {}
+        oweights={}
         for i in range(0,num_nodes):
             if i==node_to_attack:
                 weights[i]=1*slope
+                oweights[i]=0
             else:
                 weights[i]=0
-        return weights
+                oweights[i]=1
+        return Weights(weights,oweights)
 
 
 # ------------

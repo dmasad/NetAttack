@@ -39,7 +39,7 @@ class EvolutionManager(object):
 
     def __init__(self, Attacker, Defender, network_size, edge_count, fitness,
                  pop_size, generation_count, offspring, mutation_rate, initial_graph, instant_rewire, self_assembly_graph = True,
-                 output = False):
+                 output = False,file_name_appendix="",file_path="",attacker_resources=1,defender_resources=1):
         '''
         Create a new complete coevolution run.
         
@@ -56,6 +56,13 @@ class EvolutionManager(object):
             self_assembly_graph: If True, the build of the graph is done by the defender otherwise a valid graph must be provided (previous parameter)
             instant_rewire: If True, the fitness each round of each run 
                             is not recomputed until the network finishes rewiring.
+            output: if output is True, statistics on attacker, defender, and the network are written to disk
+            file_name_appendix: the file name (such as attackers or defenders) of the statistics file is concatenated with this string. E.g. if file_nameappendix
+                                is 1, the file is called attackers1.csv or defenders1.csv. 
+            file_path: optional path that you can specify - the output files are written there. 
+            attacker_resources: number of nodes that can be removed by the attacker in each round
+            defender_resources: number of nodes that can be rewired by the defender in each round
+            
         '''
         self.Attacker = Attacker
         self.Defender = Defender
@@ -68,6 +75,10 @@ class EvolutionManager(object):
         self.mutation_rate = mutation_rate
         self.instant_rewire = instant_rewire
         self.output = output
+        self.attacker_resources=attacker_resources
+        self.defender_resources=defender_resources
+        self.file_path = file_path
+       
         
         # Create the generation container
         self.current_generation = 0
@@ -78,6 +89,8 @@ class EvolutionManager(object):
         
         self.currentGraph = initial_graph
         self.self_assembly_graph = self_assembly_graph
+        
+        self.file_name_appendix=file_name_appendix
         
         open('data.json', mode='w')
         
@@ -93,13 +106,16 @@ class EvolutionManager(object):
         
         # Prepare output files:
         if self.output:
-            self.attacker_records_file = open("attackers.csv", "wb")
+            self.attacker_records_file = open(str(file_path)+"attackers"+str(file_name_appendix)+".csv", "wb")
             self.attacker_writer = csv.writer(self.attacker_records_file)
             self.attacker_writer.writerow(["Generation", "ID", "Fitness"])
             
-            self.defender_records_file = open("defenders.csv", "wb")
+            self.defender_records_file = open(str(file_path)+"defenders"+str(file_name_appendix)+".csv", "wb")
             self.defender_writer = csv.writer(self.defender_records_file)
             self.defender_writer.writerow(["Generation", "ID", "Fitness"])
+            
+            self.network_writer_file = open(str(file_path)+"network"+str(file_name_appendix)+".csv", "wb")
+            self.network_writer = csv.writer(self.network_writer_file)
             
         
     
@@ -110,7 +126,7 @@ class EvolutionManager(object):
         
         while self.current_generation < self.generation_count:
             if verbose:
-                print "Running generation", self.current_generation
+                print "Run ", self.file_name_appendix," Generation ",self.current_generation
             self.run_generation()
             self.breed_next_generation()
         
@@ -133,10 +149,11 @@ class EvolutionManager(object):
         defenders = range(self.pop_size)
         
         runs = []
-        j=0
         # Prepare runs:
+        i=0
         while len(attackers) > 0:
             # Pick the attacker and defender:
+            i+=1
             a = attackers.pop(random.randrange(len(attackers)))
             attacker_genome = self.generations[self.current_generation]["attackers"][a]
             attacker = self.Attacker(genome=attacker_genome)
@@ -151,36 +168,51 @@ class EvolutionManager(object):
             rounds = 10
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
-                             self.network_size, self.edge_count, self.currentGraph, self.self_assembly_graph, self.instant_rewire)
+                             self.network_size, self.edge_count, self.currentGraph,self.current_generation,i, 
+                             self.self_assembly_graph, self.instant_rewire,self.attacker_resources,self.defender_resources,self.file_path,self.file_name_appendix)
+            
             
             runs.append(run)
         
         self.current_fitness = {"attackers": {}, "defenders": {}}
         # Execute all runs and compute fitness
         # (If parallelizing, put that here.)
-        for run in runs:
-            
-            ##set the parameters required to create the JSON dictionary
-            run.jsonParamSet(self.current_generation,j)
-            j +=1
-            
-            fitness = run.run()
-            self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
-            self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
+        avg_fitness=0
         
+        self.diameters= {"attackers": {}, "defenders": {}}
+        cnt=0
+        for run in runs:
+            fitness = run.run()
+            node_distribution = run.get_node_distribution()
+            self.network_writer.writerow([self.current_generation]+node_distribution) 
+            
+            self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
+            #print self.current_fitness["attackers"]
+            self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
+            self.diameters["attackers"][tuple(run.attacker.get_genome())]=run.get_diameter()
+            self.diameters["defenders"][tuple(run.defender.get_genome())]=run.get_diameter()
+            
+            avg_fitness+=fitness
+            cnt+=1
+            
+        print "avg fitness attacker",avg_fitness/cnt
+            
         # File output:
         if self.output:
             i = 0
             for genome, fitness in self.current_fitness["attackers"].items():
-                row = [self.current_generation, i, fitness] + list(genome)
+                diameter=self.diameters["attackers"][genome]
+                row = [self.current_generation, i, fitness,diameter] + list(genome)
                 self.attacker_writer.writerow(row)
                 i += 1
             
             i = 0
             for genome, fitness in self.current_fitness["defenders"].items():
-                row = [self.current_generation, i, fitness] + list(genome)
+                diameter=self.diameters["defenders"][genome]
+                row = [self.current_generation, i, fitness,diameter] + list(genome)
                 self.defender_writer.writerow(row)
                 i += 1
+         
          
                 
             

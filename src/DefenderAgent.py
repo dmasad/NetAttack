@@ -291,6 +291,84 @@ class StupidDefender(Defender):
         else:
             self.genome=genome
          
-                
+
+class Defender1(object):
+    
+    def __init__(self, genome=None):
        
+        self.strategies = [PreferentialAttachment(), RandomAttachment(), AssortativeAttachment()]
         
+        if(genome == None):
+            # self.genome=[1,0,0,0,0,0,0,0]
+            self.genome = []
+            for i in range(len(self.strategies) * 2):
+                self.genome.append(random.random() * 100)
+            # print self.genome
+        else:
+            self.genome = genome
+        
+    def get_genome(self):
+        return self.genome
+    
+    
+    def rewire(self, nodes, graph):
+        '''
+        Rewire the nodes in the graph.
+        Args:
+        nodes: a list of nodes to be rewired.
+        graph: the graph within which the nodes are to be rewired.
+        '''
+        new_edges = []
+        
+        for node in nodes:
+            
+            # get connected nodes
+            
+            connected_nodes = graph.neighbors(node)
+            # get all nodes
+            all_disconnected_nodes = graph.nodes()
+            
+            # remove connected nodes from all nodes
+            for i in connected_nodes:
+                all_disconnected_nodes.remove(i)
+            
+            all_disconnected_nodes.remove(node)
+            
+            if(len(all_disconnected_nodes) > 0):
+
+            # Initiate weights
+                connect_weights = {}
+                for candidate_node in graph.nodes():
+                    connect_weights[candidate_node] = 0
+                    # Apply strategies
+                i = 0
+                for strategy in self.strategies:
+                    strategy_weights = strategy.run(graph, all_disconnected_nodes, self.genome[i], self.genome[i + 1], node)
+                    i += 2
+                    w = strategy_weights.get_weights()
+                    wo = strategy_weights.get_oweights()
+                    try:
+                        for candidate_node in w:
+                            connect_weights[candidate_node] += w[candidate_node]
+                            for candidate_node in wo:
+                                connect_weights[candidate_node] += wo[candidate_node]
+                    except:
+                        print "error"
+                    # Pick a connection
+                    
+                wc = True
+                # while(wc):
+                target_node = weighted_random(connect_weights)
+                #    wc=(graph.has_edge(node,target_node) or target_node==node)
+                
+                new_edges.append((node, target_node))
+                # print "Connecting", node, "to", target_node
+        
+ 
+        return new_edges
+                
+                
+
+# ------------
+# TESTING TOOLS
+# -------------
