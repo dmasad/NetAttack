@@ -159,7 +159,8 @@ class RunManager(object):
                 rewiring+=1
                 self.writeGephi(rewiring)
                 
-                
+            if budget <= 0:
+                return self.G     
                 
             '''
             Create a random list from the nodes that lost edges
@@ -188,7 +189,7 @@ class RunManager(object):
             '''
             
             all_nodes_in_network=self.G.nodes()
-            random.shuffle(all_nodes_in_network)
+            #random.shuffle(all_nodes_in_network)
             while budget>0 and len(all_nodes_in_network)>0:
                 node_to_rewire=all_nodes_in_network.pop()
                 edges_to_rewire=self.defender.rewire([node_to_rewire], self.G)

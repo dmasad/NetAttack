@@ -4,6 +4,7 @@ import networkx as nx
 import copy
 from array import *
 from DefenderAgent import Weights
+from numpy.linalg import LinAlgError
 
 from GenomeAgent import Strategy
 
@@ -214,16 +215,31 @@ class EigenvectorCentralityAttackStrategy(Strategy):
 class CommunicabilityCentralityAttackStrategy(Strategy):
     '''
     Example communicability centrality-attack strategy implementation
+    Calculation of communicability does not work for all networks
+    We catch the exception and set weights to 0 in that case.
     '''
     
     def run(self, graph, slope,slope1):
-        communicability_data = nx.communicability_centrality(graph)
+        works=True
+        try:
+            communicability_data = nx.communicability_centrality(graph)
+        except LinAlgError:
+            works=False
+            print "Comunicability: LinAlgError"
+             
         weights = {}
         oweights={}
-        max_comm_for_normaliz = max(communicability_data.values())
+        
+        max_comm_for_normaliz = 0
+        if works:
+            max_comm_for_normaliz = max(communicability_data.values())
         for node, commu in communicability_data.items():
-            weights[node] = communicability_data[node] * slope / max_comm_for_normaliz
-            oweights[node] = (1-communicability_data[node]) * slope1 / max_comm_for_normaliz
+            if works:
+                weights[node] = communicability_data[node] * slope / max_comm_for_normaliz
+                oweights[node] = (1-communicability_data[node]) * slope1 / max_comm_for_normaliz
+            else:
+                weights[node]=0
+                oweights[node]=0
         
         return Weights(weights,oweights)
 
