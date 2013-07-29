@@ -7,6 +7,7 @@ Created on Jun 11, 2013
 import random
 import networkx as nx
 
+
 from networkx.readwrite import json_graph
 
 import copy
@@ -54,6 +55,7 @@ class RunManager(object):
         self.removed_nodes = []
         self.file_path=file_path
         self.file_name_appendix=file_name_appendix
+        self.current_fitness=0
         
         self.gephi_out=False
     
@@ -97,8 +99,12 @@ class RunManager(object):
         for f in self.fitness_per_round:
             total_fitness += f
         total_fitness /= (1.0 * len(self.fitness_per_round))
+        self.current_fitness=total_fitness
         return total_fitness
-        
+    
+    def get_current_fitness(self):
+        return self.current_fitness
+    
     def build_initial_network(self):
         '''
         The defender initiates the network.
@@ -118,7 +124,8 @@ class RunManager(object):
         No node has lost a neighbor in the beginning, we therefore set the
         respective value in the dictionary to 0 for all nodes
         ''' 
-        self.nodes_lost_edges={x: 0 for x in self.G.nodes()}
+        #(key, value) for (key, value) in sequence
+        self.nodes_lost_edges=dict((x,0) for x  in self.G.nodes())
         
         '''
         We attack the network as many times as our resources allow
@@ -255,7 +262,5 @@ class RunManager(object):
         This function returns the diameter of the current network      
         It returns -1 if there is more than one component in the network  
         '''
-        diameter=-1
-        if nx.is_connected(self.G):
-           diameter=nx.diameter(self.G)
-        return diameter
+        return len(self.G.edges())
+        

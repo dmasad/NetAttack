@@ -12,19 +12,29 @@ class AttackerAgent(object):
     '''
     Attacker Agent class that manages all the aspects of attack
     '''
-    def __init__(self, genome = None):
+    def __init__(self, strategies=None,double_strategies=True,genome = None):
         '''The genome is randomly created if no list is specified with the values
         The genome represents the slopes giving a preference to certain metrics to be used in the attack
         
         Args: list with genome
         '''
-        self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy(),EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
+        if strategies == None:
+            self.strategies = [DegreeAttackStrategy(),BetweennessAttackStrategy(),ClosenessAttackStrategy(),ClusteringAttackStrategy(),EigenvectorCentralityAttackStrategy(),CommunicabilityCentralityAttackStrategy(),RandomAttackStrategy()]
+        else:
+            self.strategies = strategies
+            
+            
+        self.double_strategies=double_strategies
+        
+        mult=1
+        if double_strategies:
+            mult=2
 #        self.strategies = [DegreeAttackStrategy()]
 
         maxSlopeValue = 100
         if(genome==None):
             self.genome=[]
-            for i in range(len(self.strategies)*2):
+            for i in range(len(self.strategies)*mult):
                 self.genome.append(random.random()*maxSlopeValue)
             #print self.genome
         else:
@@ -55,7 +65,11 @@ class AttackerAgent(object):
             for key in components[i]:
                 value = sumWeightsMetrics.get(key)
                 length = len(components[i])
-                componenetWeightedValue = value*length/graph.order()
+                componenetWeightedValue=0
+                try:
+                    componenetWeightedValue = value*length/graph.order()
+                except TypeError:
+                        print "nothing"
                 sumWeightsCoinsideringComponents[key]=componenetWeightedValue  
         probability = copy.deepcopy(sumWeightsCoinsideringComponents)
         totalWeightSum = sum(sumWeightsCoinsideringComponents.values())
@@ -92,12 +106,16 @@ class AttackerAgent(object):
         j=0
         for i in range(len(self.strategies)):
             strategy = self.strategies[i]
-            tempWeight = strategy.run(graph,slope[j*2],slope[j*2+1])
+            if(self.double_strategies):
+                tempWeight = strategy.run(graph,slope[j*2],slope[j*2+1])
+            else:
+                tempWeight = strategy.run(graph,slope[j],slope[j])
             j+=1
             #print tempWeight
             for k in tempWeight.get_weights():
                 resultDict[k] = resultDict.get(k, 0)+tempWeight.get_weights().get(k, 0)
-                resultDict[k] = resultDict.get(k, 0)+tempWeight.get_oweights().get(k, 0)
+                if(self.double_strategies):
+                    resultDict[k] = resultDict.get(k, 0)+tempWeight.get_oweights().get(k, 0)
                 
         return resultDict
         
@@ -216,7 +234,7 @@ class CommunicabilityCentralityAttackStrategy(Strategy):
     '''
     Example communicability centrality-attack strategy implementation
     Calculation of communicability does not work for all networks
-    We catch the exception and set weights to 0 in that case.
+    We catch the exception and set weights to 0 in that case.                                           
     '''
     
     def run(self, graph, slope,slope1):
@@ -244,23 +262,49 @@ class CommunicabilityCentralityAttackStrategy(Strategy):
         return Weights(weights,oweights)
 
 
+# class RandomAttackStrategy(Strategy):
+#     '''
+#     Examplerandom-attack strategy implementation
+#     '''
+#     
+#     def run(self, graph, slope,slope1):
+#         num_nodes = graph.order()
+#         node_to_attack = random.randint(0,num_nodes)
+#         weights = {}
+#         oweights={}
+#         for i in range(0,num_nodes):
+#             if i==node_to_attack:
+#                 weights[i]=1*slope
+#                 oweights[i]=0
+#             else:
+#                 weights[i]=0
+#                 oweights[i]=1
+#         return Weights(weights,oweights)
+
 class RandomAttackStrategy(Strategy):
     '''
-    Examplerandom-attack strategy implementation
+    Assign attack weights at random.
     '''
     
-    def run(self, graph, slope,slope1):
-        num_nodes = graph.order()
-        node_to_attack = random.randint(0,num_nodes)
+    def run(self, graph, slope1,slope2):
+        '''
+        Assign weight to node depending on degree
+    '''
         weights = {}
         oweights={}
-        for i in range(0,num_nodes):
-            if i==node_to_attack:
-                weights[i]=1*slope
-                oweights[i]=0
-            else:
-                weights[i]=0
-                oweights[i]=1
+        
+        r=random.random()
+        random_weights={}
+        sum=0
+        
+        
+
+        #create random weights for all nodes
+        for node in graph.nodes():
+            r=random.random()
+            weights[node] = slope1*r
+            oweights[node] =  slope2*(1-r)
+        
         return Weights(weights,oweights)
 
 

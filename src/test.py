@@ -95,78 +95,77 @@ def effective_diameter(graph, q=0.9):
 
 
 #for i in range(5):
-# i=1
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
-# 
-# evolution_manager.run(True)
-# i+=1
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
-# evolution_manager.run(True)
-# 
-# i+=1
-# 
-# evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
-#                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
-# evolution_manager.run(True)
-# 
-# i+=1
-i=13
+i=1
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
+ 
+evolution_manager.run(True)
+i+=1
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=3)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=4)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 33,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 36,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
+evolution_manager.run(True)
+ 
+i+=1
+ 
+evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 39,fitness=fitness_function1, pop_size=100, 
+                                     generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=2,defender_resources=5)
+evolution_manager.run(True)
+ 
+i+=1
 evolution_manager = EvolutionManager(AttackerAgent, Defender, 30, 30,fitness=fitness_function1, pop_size=100, 
                                      generation_count=150,offspring=2, mutation_rate=0.2,initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="C:/Users/jschmidt/Dropbox/csss2013CoEv/",attacker_resources=3,defender_resources=4)
 evolution_manager.run(True)

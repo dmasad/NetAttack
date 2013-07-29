@@ -1,0 +1,14 @@
+#$ -N python
+#$ -V
+#$ -t 1-7:1
+#$ -l h_rt=50:00:00
+
+cd /home/lv70125/jschmidt/git1
+
+export PYTHONPATH=/opt/sw/networkx/1.7/lib/python2.6/site-packages:/opt/sw/numpy/1.7.0/lib64/python2.4/site-packages:$PYTHONPATH
+
+echo $PYTHONPATH
+
+python26 server_stupid_mult.py $SGE_TASK_ID
+
+

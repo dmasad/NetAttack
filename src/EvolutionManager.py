@@ -7,10 +7,9 @@ import random
 import csv
 from collections import defaultdict
 import networkx as nx
+from multiprocessing import Process,Queue
 
 from RunManager import *
-
-
 
 def weighted_random(item_dict):
     '''
@@ -39,7 +38,7 @@ class EvolutionManager(object):
 
     def __init__(self, Attacker, Defender, network_size, edge_count, fitness,
                  pop_size, generation_count, offspring, mutation_rate, initial_graph, instant_rewire, self_assembly_graph = True,
-                 output = False,file_name_appendix="",file_path="",attacker_resources=1,defender_resources=1):
+                 output = False,file_name_appendix="",file_path="",attacker_resources=1,defender_resources=1,attacker_strategies=None,defender_strategies=None,double_strategy=True):
         '''
         Create a new complete coevolution run.
         
@@ -78,6 +77,9 @@ class EvolutionManager(object):
         self.attacker_resources=attacker_resources
         self.defender_resources=defender_resources
         self.file_path = file_path
+        self.double_strategy= double_strategy
+        self.defender_strategies=defender_strategies
+        self.attacker_strategies=attacker_strategies
        
         
         # Create the generation container
@@ -99,9 +101,9 @@ class EvolutionManager(object):
         
         # Create generation 0:
         for i in range(pop_size):
-            new_attacker = self.Attacker()
+            new_attacker = self.Attacker(strategies=self.attacker_strategies,double_strategies=self.double_strategy)
             self.generations[0]["attackers"].append(new_attacker.get_genome())
-            new_defender = self.Defender()
+            new_defender = self.Defender(strategies=self.defender_strategies,double_strategies=self.double_strategy)
             self.generations[0]["defenders"].append(new_defender.get_genome())
         
         # Prepare output files:
@@ -156,16 +158,17 @@ class EvolutionManager(object):
             i+=1
             a = attackers.pop(random.randrange(len(attackers)))
             attacker_genome = self.generations[self.current_generation]["attackers"][a]
-            attacker = self.Attacker(genome=attacker_genome)
+            attacker = self.Attacker(strategies=self.attacker_strategies,double_strategies=self.double_strategy,genome=attacker_genome)
             
             
             d = defenders.pop(random.randrange(len(defenders)))
             defender_genome = self.generations[self.current_generation]["defenders"][d]
-            defender = self.Defender(genome=defender_genome)
+            defender = self.Defender(strategies=self.defender_strategies,double_strategies=self.double_strategy,genome=defender_genome)
             
             # Choose number of rounds at random:
             #rounds = random.randrange(5,16)
-            rounds = 10
+            rounds = 20
+            
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
                              self.network_size, self.edge_count, self.currentGraph,self.current_generation,i, 
@@ -181,19 +184,55 @@ class EvolutionManager(object):
         
         self.diameters= {"attackers": {}, "defenders": {}}
         cnt=0
+        ps=[]
+        q = Queue()
+        
+        size_runs=len(runs)
+        
         for run in runs:
-            fitness = run.run()
+            
+
+            p = Process(target=run_function, args=(run,q,))
+            p.start()
+            ps.append(p)
+            #print "process "+ str(p)+" started"
+        
+        runs=[] 
+        i=1   
+        while i<size_runs:
+            r=q.get()
+            #print (r)
+            runs.append(r)
+            i+=1 
+            #p=ps.pop()
+            #p.join()
+            #print "process "+ str(p)+" joined"
+            
+        
+        for run in runs:    
+            fitness = run.get_current_fitness()
             node_distribution = run.get_node_distribution()
             self.network_writer.writerow([self.current_generation]+node_distribution) 
+            k_a=[]
+            k_a.append(cnt)
+            k_a.extend(run.attacker.get_genome())
             
-            self.current_fitness["attackers"][tuple(run.attacker.get_genome())] = fitness
+            k_d=[]
+            k_d.append(cnt)
+            k_d.extend(run.defender.get_genome())
+            
+            
+            self.current_fitness["attackers"][tuple(k_a)] = fitness
             #print self.current_fitness["attackers"]
-            self.current_fitness["defenders"][tuple(run.defender.get_genome())] = (1 - fitness)
-            self.diameters["attackers"][tuple(run.attacker.get_genome())]=run.get_diameter()
-            self.diameters["defenders"][tuple(run.defender.get_genome())]=run.get_diameter()
+            self.current_fitness["defenders"][tuple(k_d)] = (1 - fitness)
+            self.diameters["attackers"][tuple(k_a)]=run.get_diameter()
+            self.diameters["defenders"][tuple(k_d)]=run.get_diameter()
             
             avg_fitness+=fitness
             cnt+=1
+        
+        print "cnt"+str(cnt)
+        print "len"+str(len(self.current_fitness["attackers"]))
             
         print "avg fitness attacker",avg_fitness/cnt
             
@@ -202,16 +241,24 @@ class EvolutionManager(object):
             i = 0
             for genome, fitness in self.current_fitness["attackers"].items():
                 diameter=self.diameters["attackers"][genome]
-                row = [self.current_generation, i, fitness,diameter] + list(genome)
+                l=list(genome)
+                l.pop(0)
+                row = [self.current_generation, i, fitness,diameter] + l
                 self.attacker_writer.writerow(row)
                 i += 1
+            
+            print "i"+str( i)
             
             i = 0
             for genome, fitness in self.current_fitness["defenders"].items():
                 diameter=self.diameters["defenders"][genome]
-                row = [self.current_generation, i, fitness,diameter] + list(genome)
+                l=list(genome)
+                l.pop(0)
+                row = [self.current_generation, i, fitness,diameter] + l
                 self.defender_writer.writerow(row)
                 i += 1
+                
+            print i
          
          
                 
@@ -231,6 +278,8 @@ class EvolutionManager(object):
                 # Pick two parents
                 parent1 = list(weighted_random(self.current_fitness[breed]))
                 parent2 = list(weighted_random(self.current_fitness[breed]))
+                parent1.pop(0)
+                parent2.pop(0)
                 for i in range(self.offspring):
                     child = self.crossover(parent1, parent2)
                     child = self.mutate(child)
@@ -399,6 +448,8 @@ class SingleEvolutionManager(EvolutionManager):
                 self.generations[self.current_generation].append(child)
      
     
-        
+def run_function(run,q):
+    run.run()        
+    q.put(run)    
         
         

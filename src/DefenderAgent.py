@@ -83,6 +83,29 @@ class RandomAttachment(Strategy):
         
         return Weights(weights,oweights)
     
+class BalancedReplenishment(Strategy):
+    '''
+    Assign attack weights at random.
+    '''
+    
+    
+    def run(self, graph, all_disconnected_nodes,a1,a2,node=None):
+        '''
+        Assign weight to node depending on degree
+    '''
+        weights = {}
+        oweights={}
+        
+        betweenness_data = nx.betweenness_centrality(graph)
+        weights = {}
+        oweights = {}
+        for node, betw in betweenness_data.items():
+            weights[node] = (float)(1) / (float)(betweenness_data[node] +0.0000001) * a1
+            oweights[node] = (1-weights[node]) * a2
+        return Weights(weights,oweights)
+        
+      
+    
 class AssortativeAttachment(Strategy):
     '''
     Assign attack weights at random.
@@ -196,14 +219,22 @@ class ConnectedAttachment(Strategy):
 
 class Defender(object):
     
-    def __init__(self,genome=None):
+    def __init__(self,strategies=None,double_strategies=True,genome=None):
        
-        self.strategies = [PreferentialAttachment(),RandomAttachment(),AssortativeAttachment(),DistanceAttachment(),ConnectedAttachment()]
+        if strategies == None:
+            self.strategies = [PreferentialAttachment(),RandomAttachment(),AssortativeAttachment(),DistanceAttachment(),ConnectedAttachment()]
+        else:
+            self.strategies = strategies
         
+        self.double_strategies=double_strategies
+        
+        mult=1
+        if double_strategies:
+            mult=2
         if(genome==None):
             #self.genome=[1,0,0,0,0,0,0,0]
             self.genome=[]
-            for i in range(len(self.strategies)*2):
+            for i in range(len(self.strategies)*mult):
                 self.genome.append(random.random()*100)
             #print self.genome
         else:
@@ -234,7 +265,8 @@ class Defender(object):
             for i in connected_nodes:
                 all_disconnected_nodes.remove(i)
             
-            all_disconnected_nodes.remove(node)
+            if node in all_disconnected_nodes:
+                all_disconnected_nodes.remove(node)
             
             # Initiate weights
             connect_weights = {}
@@ -243,15 +275,21 @@ class Defender(object):
                 # Apply strategies
             i=0
             for strategy in self.strategies:
-                strategy_weights = strategy.run(graph, all_disconnected_nodes,self.genome[i],self.genome[i+1],node)
-                i+=2
+                if(self.double_strategies):
+                    strategy_weights = strategy.run(graph, all_disconnected_nodes,self.genome[i],self.genome[i+1],node)
+                    i+=2
+                else:
+                    strategy_weights = strategy.run(graph, all_disconnected_nodes,self.genome[i],self.genome[i],node)
+                    i+=1
                 w=strategy_weights.get_weights()
                 wo=strategy_weights.get_oweights()
                 try:
                     for candidate_node in w:
                         connect_weights[candidate_node] += w[candidate_node]
-                    for candidate_node in wo:
-                        connect_weights[candidate_node] += wo[candidate_node]
+                    
+                    if self.double_strategies:
+                        for candidate_node in wo:
+                            connect_weights[candidate_node] += wo[candidate_node]
                 except:
                     print "error"
                     # Pick a connection
