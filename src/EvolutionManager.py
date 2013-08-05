@@ -3,6 +3,7 @@ Created on Jun 15, 2013
 
 @author: dmasad
 '''
+from time import gmtime, strftime
 import random
 import csv
 from collections import defaultdict
@@ -129,6 +130,7 @@ class EvolutionManager(object):
         while self.current_generation < self.generation_count:
             if verbose:
                 print "Run ", self.file_name_appendix," Generation ",self.current_generation
+                print "time: "+strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
             self.run_generation()
             self.breed_next_generation()
         
@@ -184,32 +186,33 @@ class EvolutionManager(object):
         
         self.diameters= {"attackers": {}, "defenders": {}}
         cnt=0
-        ps=[]
+        runs_ready=[]
         q = Queue()
         
         size_runs=len(runs)
         
-        for run in runs:
-            
-
-            p = Process(target=run_function, args=(run,q,))
+        
+        for ccnt_start in range(8):
+            p = Process(target=run_function, args=(runs[ccnt_start], q,))
             p.start()
-            ps.append(p)
-            #print "process "+ str(p)+" started"
+            # ps.append(p)
+            print "process " + str(ccnt_start) + " started"
+   
+             
         
-        runs=[] 
-        i=1   
-        while i<size_runs:
+        for ccnt in range(8,size_runs):
             r=q.get()
-            #print (r)
-            runs.append(r)
-            i+=1 
-            #p=ps.pop()
-            #p.join()
-            #print "process "+ str(p)+" joined"
-            
+            runs_ready.append(r)
+            p = Process(target=run_function, args=(runs[ccnt],q,))
+            p.start()
+            print "process "+ str(ccnt)+" started"
         
-        for run in runs:    
+        for ccnt_end in range(8):
+            r=q.get()  
+            runs_ready.append(r)    
+ 
+        for cnt in range(len(runs_ready)):   
+            run=runs_ready[cnt]           
             fitness = run.get_current_fitness()
             node_distribution = run.get_node_distribution()
             self.network_writer.writerow([self.current_generation]+node_distribution) 
@@ -229,12 +232,12 @@ class EvolutionManager(object):
             self.diameters["defenders"][tuple(k_d)]=run.get_diameter()
             
             avg_fitness+=fitness
-            cnt+=1
         
-        print "cnt"+str(cnt)
-        print "len"+str(len(self.current_fitness["attackers"]))
+        #print "cnt"+str(cnt)
+        #print "len"+str(len(self.current_fitness["attackers"]))
             
         print "avg fitness attacker",avg_fitness/cnt
+        print "time: "+strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
             
         # File output:
         if self.output:
@@ -247,7 +250,7 @@ class EvolutionManager(object):
                 self.attacker_writer.writerow(row)
                 i += 1
             
-            print "i"+str( i)
+           
             
             i = 0
             for genome, fitness in self.current_fitness["defenders"].items():
@@ -258,7 +261,7 @@ class EvolutionManager(object):
                 self.defender_writer.writerow(row)
                 i += 1
                 
-            print i
+            
          
          
                 

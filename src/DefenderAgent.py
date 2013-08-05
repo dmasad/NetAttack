@@ -99,7 +99,7 @@ class BalancedReplenishment(Strategy):
         betweenness_data = nx.betweenness_centrality(graph)
         weights = {}
         oweights = {}
-        for node, betw in betweenness_data.items():
+        for node in all_disconnected_nodes:
             weights[node] = (float)(1) / (float)(betweenness_data[node] +0.0000001) * a1
             oweights[node] = (1-weights[node]) * a2
         return Weights(weights,oweights)
