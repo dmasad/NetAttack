@@ -81,6 +81,8 @@ class EvolutionManager(object):
         self.double_strategy= double_strategy
         self.defender_strategies=defender_strategies
         self.attacker_strategies=attacker_strategies
+        
+        self.concurrent_runs=8
        
         
         # Create the generation container
@@ -191,8 +193,7 @@ class EvolutionManager(object):
         
         size_runs=len(runs)
         
-        
-        for ccnt_start in range(8):
+        for ccnt_start in range(self.concurrent_runs):
             p = Process(target=run_function, args=(runs[ccnt_start], q,))
             p.start()
             # ps.append(p)
@@ -200,14 +201,14 @@ class EvolutionManager(object):
    
              
         
-        for ccnt in range(8,size_runs):
+        for ccnt in range(self.concurrent_runs,size_runs):
             r=q.get()
             runs_ready.append(r)
             p = Process(target=run_function, args=(runs[ccnt],q,))
             p.start()
             print "process "+ str(ccnt)+" started"
         
-        for ccnt_end in range(8):
+        for ccnt_end in range(self.concurrent_runs):
             r=q.get()  
             runs_ready.append(r)    
  

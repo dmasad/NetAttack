@@ -1,9 +1,10 @@
 #$ -N python
 #$ -V
-#$ -t 1-10:1
+#$ -t 1-1:1
 #$ -l h_rt=70:00:00
+#$ -pe mpich 8
 
-cd /home/lv70125/jschmidt/git3
+cd /home/lv70125/jschmidt/git4
 
 export PYTHONPATH=/opt/sw/networkx/1.7/lib/python2.6/site-packages:/opt/sw/numpy/1.7.0/lib64/python2.4/site-packages:$PYTHONPATH
 echo $PYTHONPATH
