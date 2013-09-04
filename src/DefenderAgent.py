@@ -99,12 +99,21 @@ class BalancedReplenishment(Strategy):
         betweenness_data = nx.betweenness_centrality(graph)
         bet_sum = 0
         for i in betweenness_data:
-            bet_sum = (float)(1) / (float)(betweenness_data[i] +0.0001)
+            if(betweenness_data[i]>0):
+                bet_sum += (float)(1) / (float)(betweenness_data[i])
+            else:
+                bet_sum +=10000
         weights = {}
         oweights = {}
         for node in all_disconnected_nodes:
-            weights[node] = ((float)(1) / (float)(betweenness_data[node] +0.0001)) / bet_sum * a1
-            oweights[node] = (1-weights[node]) * a2
+            
+            if(betweenness_data[node]>0):
+                b=((float)(1) / (float)(betweenness_data[node])) / bet_sum 
+            else:
+                b=10000 / bet_sum
+                
+            weights[node] = b* a1
+            oweights[node] = (1-b) * a2
         return Weights(weights,oweights)
         
       
@@ -300,7 +309,9 @@ class Defender(object):
                     
             wc=True
             #while(wc):
+            
             #print connect_weights
+            
             target_node = weighted_random(connect_weights)
             #    wc=(graph.has_edge(node,target_node) or target_node==node)
                 

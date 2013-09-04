@@ -193,6 +193,8 @@ class EvolutionManager(object):
         
         size_runs=len(runs)
         
+     
+        
         for ccnt_start in range(self.concurrent_runs):
             p = Process(target=run_function, args=(runs[ccnt_start], q,))
             p.start()

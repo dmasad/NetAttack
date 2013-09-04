@@ -47,14 +47,18 @@ def fitness_function1(graph,penalty=1):
     return ret
 
 
-nodes=[100]
-edges=[150]
-pop_size=[200]
+#nodes=[100]
+#edges=[150]
+#pop_size=[200]
+nodes=[20]
+edges=[30]
+pop_size=[20]
+
 generation_count=[500]
 offspring=[2]
 mutation_rate=[0.05]
 attacker_resources=[3]
-defender_resources=[3 5 7 9]
+defender_resources=[3, 5, 7, 9]
 
 all_att_strat=[RandomAttackStrategy(),DegreeAttackStrategy(),BetweennessAttackStrategy()]
 all_def_strat=[RandomAttachment(),PreferentialAttachment(),BalancedReplenishment()]
@@ -70,7 +74,7 @@ for i in range(len(all_def_strat)):
 #add defenders against single attackers
 for i in range(len(all_att_strat)):
         att_strat.append([all_att_strat[i]])
-        def_strat.append(all_def_strat[i])
+        def_strat.append(all_def_strat)
 
 
 #add each one against each one
@@ -88,20 +92,19 @@ def_strat.append(all_def_strat)
 print att_strat
 print def_strat
 
-
                                      
 #stupid defender
 if __name__ == '__main__':
     i=(int)(sys.argv[1])
     
     print i
-    if(i == 1):
-        print "running"+str(i)
-        evolution_manager = EvolutionManager(AttackerAgent, Defender, nodes,edges,fitness=fitness_function1, pop_size=pop_size[1], 
-                                     generation_count=generation_count[1],offspring=offspring[1], mutation_rate=mutation_rate[1],initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="",attacker_resources=attacker_resources[1],defender_resources=defender_resources[(i-1)/16+1],
-                                     attacker_strategies=att_strat[i%16],defender_strategies=def_strat[i%16],double_strategy=False)
+    print "running"+str(i)
+    evolution_manager = EvolutionManager(AttackerAgent, Defender, nodes[0],edges[0],fitness=fitness_function1, pop_size=pop_size[0], 
+                                     generation_count=generation_count[0],offspring=offspring[0], mutation_rate=mutation_rate[0],initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="",attacker_resources=attacker_resources[0],defender_resources=defender_resources[(i-1)/16],
+                                     attacker_strategies=att_strat[(i-1)%16],defender_strategies=def_strat[(i-1)%16],double_strategy=False)
         
 
+    
     evolution_manager.run(True)  
 
 
