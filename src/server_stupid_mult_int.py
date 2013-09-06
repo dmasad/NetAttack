@@ -8,6 +8,8 @@ Created on 22.07.2013
 import networkx as nx
 
 import numpy as np
+import os
+import glob
 #from scipy.interpolate import interp1d
 
 from DefenderAgent import * 
@@ -46,6 +48,9 @@ def fitness_function1(graph,penalty=1):
     
     return ret
 
+for files in glob.glob("*.txt"):
+    os.remove(files)
+    
 
 #nodes=[100]
 #edges=[150]
@@ -54,7 +59,7 @@ nodes=[20]
 edges=[30]
 pop_size=[20]
 
-generation_count=[500]
+generation_count=[4]
 offspring=[2]
 mutation_rate=[0.05]
 attacker_resources=[3]
@@ -92,6 +97,11 @@ def_strat.append(all_def_strat)
 print att_strat
 print def_strat
 
+resDir="results"
+
+if not os.path.exists(resDir):
+    os.makedirs(resDir)
+
                                      
 #stupid defender
 if __name__ == '__main__':
@@ -103,8 +113,12 @@ if __name__ == '__main__':
                                      generation_count=generation_count[0],offspring=offspring[0], mutation_rate=mutation_rate[0],initial_graph=None,instant_rewire=False,output=True,file_name_appendix=i,file_path="",attacker_resources=attacker_resources[0],defender_resources=defender_resources[(i-1)/16],
                                      attacker_strategies=att_strat[(i-1)%16],defender_strategies=def_strat[(i-1)%16],double_strategy=False)
         
-
     
-    evolution_manager.run(True)  
+    
+    evolution_manager.run(True)
+    
+    for files in glob.glob("*.txt"):
+        #print(files)
+        os.rename(files,resDir+"/"+files)
 
 

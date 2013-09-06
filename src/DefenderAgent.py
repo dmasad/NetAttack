@@ -2,6 +2,7 @@ from GenomeAgent import Strategy
 from GenomeAgent import GenomeAgent
 import networkx as nx
 import random
+import collections
 
 def weighted_random(item_dict):
     '''
@@ -49,8 +50,8 @@ class PreferentialAttachment(Strategy):
                         
         for node in all_disconnected_nodes:
             
-            if nmbEdges==0:
-                metric=0
+            if (graph.degree(node))==0:
+                metric=0.00000000001
             else:
                 metric=((float)(graph.degree(node)) / (float)(2*nmbEdges))
             #print "node: ",node," metric: ",d
@@ -88,33 +89,64 @@ class BalancedReplenishment(Strategy):
     Assign attack weights at random.
     '''
     
-    
+    #MODIFIED 14.30 -05-09
     def run(self, graph, all_disconnected_nodes,a1,a2,node=None):
         '''
         Assign weight to node depending on degree
-    '''
+        '''
         weights = {}
         oweights={}
         
         betweenness_data = nx.betweenness_centrality(graph)
         bet_sum = 0
         for i in betweenness_data:
-            if(betweenness_data[i]>0):
-                bet_sum += (float)(1) / (float)(betweenness_data[i])
-            else:
-                bet_sum +=10000
+            bet_sum += (float)(1) / (float)(betweenness_data[i]+0.0001)
+            
+        print "bet_sum: "+str(bet_sum)
         weights = {}
         oweights = {}
         for node in all_disconnected_nodes:
             
-            if(betweenness_data[node]>0):
-                b=((float)(1) / (float)(betweenness_data[node])) / bet_sum 
-            else:
-                b=10000 / bet_sum
-                
+            b=((float)(1) / ((float)(betweenness_data[node]+0.0001))) / bet_sum 
+
+            print betweenness_data[node]
+            print b   
+            
             weights[node] = b* a1
             oweights[node] = (1-b) * a2
         return Weights(weights,oweights)
+    
+    
+    
+    
+    
+    #ORIGINAL
+#     def run(self, graph, all_disconnected_nodes,a1,a2,node=None):
+#         '''
+#         Assign weight to node depending on degree
+#     '''
+#         weights = {}
+#         oweights={}
+#         
+#         betweenness_data = nx.betweenness_centrality(graph)
+#         bet_sum = 0
+#         for i in betweenness_data:
+#             if(betweenness_data[i]>0):
+#                 bet_sum += (float)(1) / (float)(betweenness_data[i])
+#             else:
+#                 bet_sum +=10000
+#         weights = {}
+#         oweights = {}
+#         for node in all_disconnected_nodes:
+#             
+#             if(betweenness_data[node]>0):
+#                 b=((float)(1) / (float)(betweenness_data[node])) / bet_sum 
+#             else:
+#                 b=10000 / bet_sum
+#                 
+#             weights[node] = b* a1
+#             oweights[node] = (1-b) * a2
+#         return Weights(weights,oweights)
         
       
     
@@ -226,7 +258,67 @@ class ConnectedAttachment(Strategy):
             weights[nodes]=a1*(1-metric)
             oweights[nodes]=a2*(metric)
             
-        return Weights(weights,oweights)   
+        return Weights(weights,oweights) 
+    
+    
+    
+    
+class TrinagleAttachment(Strategy):
+    '''
+    Assign attack weights based on the the membership of a neighborhood in order to have nodes in the neighborhood of a node with
+    high degree to be more likely to form a multitude of triangle structures.
+    '''
+   
+    def run(self, graph, all_disconnected_nodes,a1,a2,node=None):
+        '''
+        Assign weight to node depending on triangle formation
+    '''
+        weights = {}
+        oweights={}
+       
+        order =graph.order()
+        degreeDict = graph.degree() 
+        
+        #print("valori a1 e a2")
+        #print(a1)
+        #print(a2)
+        
+        '''
+        This is the initial situation when the network is disconnected very first step
+        and we assign all the nodes the same maximum weight.
+        Not entirely sure about the opposite weights
+        '''
+        if graph.size() == 0:
+            for k in range (0,order):
+                weights[k] = 1
+                oweights[k] = 0
+        else:
+            #we sort the nodes for based on the degree
+            sortedNodes = sorted(degreeDict, key=degreeDict.get, reverse=True)
+            maxNodeDeg = max(sortedNodes)
+            #print(maxNodeDeg)
+            #initialize the nodes to zero
+            for i in sortedNodes:
+                #weights[i] = 0
+                weights[i] = degreeDict.get(i)/(float) (maxNodeDeg)
+            newWeight = 0
+           
+            for nodes in all_disconnected_nodes:
+                #get the neighbors of the node with highest degree
+                #and assign to each node a weight that is the ratio between the 
+                #order of the neighborhood and the order of the graph
+                #nodes in the same neighborhood of an high degree node have the same weight
+                #but also nodes that belong to different neighbors with the same order will have the same weight 
+                for i in sortedNodes:
+                    neigh = graph.neighbors(i)
+                    neighOrder = len(neigh)
+                    newWeight = ( (float)(neighOrder) / (float) (order))
+                    for j in neigh:
+                        if (weights[j]<newWeight):
+                            weights[j] = a1*newWeight
+                            oweights[j] = a2*(1 - newWeight)
+        #print(weights)
+        return Weights(weights,oweights)         
 
 
 class Defender(object):

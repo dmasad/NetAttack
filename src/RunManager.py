@@ -21,7 +21,7 @@ class RunManager(object):
     '''
 
     def __init__(self, attacker, defender, num_iterations, fitness, 
-                 node_count, edge_count, initial_graph, generation,id,self_assembly_graph=True, instant_rewire=False,attacker_resources=1,defender_resources=1,file_path="",file_name_appendix=""):
+                 node_count, edge_count, initial_graph, generation,identif,self_assembly_graph=True, instant_rewire=False,attacker_resources=1,defender_resources=1,file_path="",file_name_appendix=""):
         '''
         Create a new Run Manager.
         
@@ -74,7 +74,11 @@ class RunManager(object):
         self.jsonRunParam = {}
         
         self.currentGeneration =generation
-        self.currentId=id
+        self.currentId=identif
+        
+        
+        self.initialNetwork = nx.Graph()
+        
         
     def run(self):
         '''
@@ -113,6 +117,9 @@ class RunManager(object):
             node = random.choice(self.G.nodes()) # Pick a random starting node
             new_edge = self.defender.rewire([node], self.G)
             self.G.add_edges_from(new_edge)
+            
+        self.initialNetwork = copy.deepcopy(self.G)
+       
             
     
     def attack_network(self):
@@ -230,6 +237,10 @@ class RunManager(object):
         with open(str(self.file_path)+'data'+str(self.file_name_appendix)+'.json', mode='a') as jsonfile:
                 json.dump(toBeDumpedToJsonDict,jsonfile)
                 jsonfile.write("\n")
+    
+    
+    def getNetwok (self):
+        return self.G
         
                 
                 

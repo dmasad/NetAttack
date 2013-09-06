@@ -9,6 +9,9 @@ import csv
 from collections import defaultdict
 import networkx as nx
 from multiprocessing import Process,Queue
+import matplotlib.pyplot as plt
+import operator
+
 
 from RunManager import *
 
@@ -39,7 +42,7 @@ class EvolutionManager(object):
 
     def __init__(self, Attacker, Defender, network_size, edge_count, fitness,
                  pop_size, generation_count, offspring, mutation_rate, initial_graph, instant_rewire, self_assembly_graph = True,
-                 output = False,file_name_appendix="",file_path="",attacker_resources=1,defender_resources=1,attacker_strategies=None,defender_strategies=None,double_strategy=True):
+                 output = False,file_name_appendix="",file_path="",attacker_resources=1,defender_resources=1,attacker_strategies=None,defender_strategies=None,simulationNumber=None,double_strategy=True):
         '''
         Create a new complete coevolution run.
         
@@ -99,7 +102,15 @@ class EvolutionManager(object):
         
         open('data.json', mode='w')
         
+        self.initialNetFlag = False
+        self.finalNetFlag = False
         
+        self.netId1Gen1 = nx.Graph()
+        self.netIdKGen1 = nx.Graph()
+        self.netId1GenN = nx.Graph()
+        self.netIdKGenN = nx.Graph()
+        
+        self.simulationNumber=file_name_appendix
         
         
         # Create generation 0:
@@ -156,10 +167,12 @@ class EvolutionManager(object):
         
         runs = []
         # Prepare runs:
-        i=0
+        popul=0
         while len(attackers) > 0:
             # Pick the attacker and defender:
-            i+=1
+            popul+=1
+   
+            
             a = attackers.pop(random.randrange(len(attackers)))
             attacker_genome = self.generations[self.current_generation]["attackers"][a]
             attacker = self.Attacker(strategies=self.attacker_strategies,double_strategies=self.double_strategy,genome=attacker_genome)
@@ -175,7 +188,7 @@ class EvolutionManager(object):
             
             # Create the Run
             run = RunManager(attacker, defender, rounds, self.fitness,
-                             self.network_size, self.edge_count, self.currentGraph,self.current_generation,i, 
+                             self.network_size, self.edge_count, self.currentGraph,self.current_generation,popul, 
                              self.self_assembly_graph, self.instant_rewire,self.attacker_resources,self.defender_resources,self.file_path,self.file_name_appendix)
             
             
@@ -213,6 +226,34 @@ class EvolutionManager(object):
         for ccnt_end in range(self.concurrent_runs):
             r=q.get()  
             runs_ready.append(r)    
+ 
+            ##ANDREA
+        graphsToAnalyze=[]
+        for run in runs_ready:
+            if run.currentGeneration==0: 
+                if run.currentId==1:
+                   # print("first gen first graph")
+                    #print(run.initialNetwork.edges())
+                    self.netId1Gen1=run.initialNetwork
+                    graphsToAnalyze.append(self.netId1Gen1)
+                if run.currentId==self.pop_size:
+                    #print("first gen last graph")
+                    #print(run.currentGraph.edges())
+                    self.netIdKGen1=run.currentGraph
+                    graphsToAnalyze.append(self.netIdKGen1)
+            if run.currentGeneration==self.generation_count-1: 
+                if run.currentId==1:
+                    #print("last gen first graph")
+                    #print(run.initialNetwork.edges())
+                    self.netId1GenN=run.initialNetwork
+                    graphsToAnalyze.append(self.netId1GenN)
+                if run.currentId==self.pop_size:
+                    #print("last gen last graph")
+                    #print(run.currentGraph.edges())   
+                    self.netIdKGenN=run.currentGraph
+                    graphsToAnalyze.append(self.netIdKGenN)
+
+            ########
  
         for cnt in range(len(runs_ready)):   
             run=runs_ready[cnt]           
@@ -264,7 +305,163 @@ class EvolutionManager(object):
                 self.defender_writer.writerow(row)
                 i += 1
                 
+        # Analysis of the four network of choice 1st and last of the first generation and first and last of the last generation in this case
+        '''
+                Avg node degree
+
+                node degree distribution
+
+                average clustering coefficient
+
+                average path length of the LCC weighted by the order of it compared to the initial order 
+
+                betweenness distribution
+                size of the biggest clique
+        '''
+       
+        f = open("netStatisctics"+str(self.simulationNumber)+".txt", 'a')
+        
+        
+        for graph in range(0,len(graphsToAnalyze)):
+            order = graphsToAnalyze[graph].order()#number of nodes
+            size = graphsToAnalyze[graph].size()#number of edges
+#             print("graph")
+#             print(graphsToAnalyze[graph].nodes())
+#             print(graphsToAnalyze[graph].edges())
+            avgNodeDeg = (float)(2*size)/(float)(order)
+            initialFinalGraph = "final"
+            if graph ==0:
+                initialFinalGraph = "initial"
+            f.write("Network: generation: "+str(self.current_generation)+"----"+initialFinalGraph)
+            f.write("\n")
+            f.write("Network:\n")
+            f.write("nodes:\n")
+            f.write(str(graphsToAnalyze[graph].nodes()))
+            f.write("\n")
+            f.write("edges:\n")
+            f.write(str(graphsToAnalyze[graph].edges()))
+            f.write("\n")            
+            f.write("avg node deg:")
+            f.write("\n")
+            f.write(str(avgNodeDeg))
+            f.write("\n")
+            avgClusteringCoeff =  nx.average_clustering(graphsToAnalyze[graph])
+            f.write("avg clusteting:")
+            f.write("\n")
+            f.write(str(avgClusteringCoeff))
+            f.write("\n")
+            largest_component=nx.connected_component_subgraphs(graphsToAnalyze[graph])[0]
+            path_weighted_on_order = nx.average_shortest_path_length(largest_component)/largest_component.order()
+            f.write("avg shortest path weighted on the size of the largest component:")
+            f.write("\n")
+            f.write(str(path_weighted_on_order))
+            f.write("\n")
+            cliquesFound=nx.find_cliques(graphsToAnalyze[graph])
+            #print("cliques Found")
+            cliquesList=list(cliquesFound)
+            #print(cliquesList)
+            max_clique_size = 0
+            for item in cliquesList:
+                if len(item) > max_clique_size: 
+                    max_clique_size= len(item)
+            f.write("max clique order:")
+            f.write("\n")
+            f.write(str(max_clique_size))
+            f.write("\n")
+#             f.write("graph number:")
+#             f.write("\n")
+#             f.write(str(len(graphsToAnalyze)))
+#             f.write("\n")      
+            f.write("**********************************************************\n")     
+            self.plot_degree_distribution(graphsToAnalyze[graph], self.current_generation,graph)
+            self.plot_betweenness_distribution(graphsToAnalyze[graph], self.current_generation,graph)
+            #self.fileCreatedFlag==False
             
+            
+        
+        
+        
+    def plot_degree_distribution(self,graph,generation,num):
+        degs = {}
+        degsprob = {}
+        for n in graph.nodes(): #we have to put our node list
+             deg = graph.degree(n) #we have to put our node list
+             if deg not in degs:
+                degs[deg] = 0
+             degs[deg] += 1
+        items = sorted(degs.items())
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        prob = 1
+        for (k,v) in items:
+            degsprob[k] = prob - (v/float(graph.order()))
+            prob = degsprob[k]
+            #print(prob)
+        items2= sorted(degsprob.items())
+        items2.pop()
+        if len(items)>2:
+            ax.plot([k for (k,v) in items2],[v for (k,v) in items2])
+        #     plt.ylim(0,100)
+        #     length = len(items2)
+        #     maxDeg = items2[length-1][0]
+        #     plt.xlim(0,maxDeg)  
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            plt.xlabel("Node degree K")
+            plt.ylabel("Pr(k>K)")
+        
+        if num==0:
+            valueString="initial"
+        else:
+            valueString="final"
+        
+        plt.title("Node Degree Distribution Generation "+str(generation)+" Individual "+valueString)
+        fig.savefig("results/network_"+str(self.simulationNumber)+"degree_distribution_gen"+str(generation)+"indiv"+valueString+".png")
+    
+
+    def plot_betweenness_distribution(self,graph,generation,num):
+        bets = {}
+        betsprob={}
+        bet = nx.betweenness_centrality(graph,normalized=False)
+        numBetPoints = len(bet)
+        #print(numBetPoints)
+        #print(bet)
+        maxBet = max(bet.iteritems(), key=operator.itemgetter(1))[1]
+        for i in bet: #we have to put our node list
+             #we have to put our node list         
+             roundBet = round(bet[i])
+             #print(roundBet)
+             if roundBet not in bets:
+               bets[roundBet] = 0
+             bets[roundBet] += 1
+        items = sorted(bets.items())
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        prob = 1
+#         print("numbetpoints")
+#         print(numBetPoints)
+        for (k,v) in items:
+            if numBetPoints>0:
+                betsprob[k] = prob - (v/float(numBetPoints))
+                prob = betsprob[k]
+                #print(prob)
+        items2= sorted(betsprob.items())
+        items2.pop()
+        if len(items)>2:
+            ax.plot([k for (k,v) in items2],[v for (k,v) in items2]) 
+            #ax.plot([k for (k,v) in items], [v for (k,v) in items])
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            plt.xlabel("Betwenness centrality B")
+            plt.ylabel("Pr(b>B)")
+        
+        if num==0:
+            valueString="initial"
+        else:
+            valueString="final"
+        
+        plt.title("Betweenness Distribution Generation "+str(generation)+" Individual "+valueString)
+        fig.savefig("results/network_"+str(self.simulationNumber)+"betw_distribution_gen"+str(generation)+"indiv_"+valueString+".png")        
          
          
                 
@@ -458,4 +655,8 @@ def run_function(run,q):
     run.run()        
     q.put(run)    
         
+        
+        
+
+
         
